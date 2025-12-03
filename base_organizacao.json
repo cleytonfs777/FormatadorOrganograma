@@ -1,0 +1,476 @@
+{
+  "NTS": {
+    "OF": [
+      {
+        "NUMERO": "143.304-4",
+        "POST/GRAD": "Maj",
+        "NOME": "Rafael Vicente Rosa",
+        "LOCAL": "NTS",
+        "FUNÇÃO": "CHEFE",
+        "CLASSE": "OF"
+      }
+    ]
+  },
+  "NTS CONTRATOS": {
+    "SGT": [
+      {
+        "NUMERO": "106.931-9",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Sergio Silva",
+        "LOCAL": "NTS CONTRATOS",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "148.035-9",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Alinny Buenos Santos",
+        "LOCAL": "NTS CONTRATOS",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "152.849-6",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Rodrigo Wagner Batista",
+        "LOCAL": "NTS CONTRATOS",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      }
+    ],
+    "QOE": [
+      {
+        "NUMERO": "136.000-7",
+        "POST/GRAD": "2º Ten",
+        "NOME": "Augusto César Alves",
+        "LOCAL": "NTS CONTRATOS",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QOE"
+      }
+    ],
+    "CB/SD": [
+      {
+        "NUMERO": "172.882-3",
+        "POST/GRAD": "Cb",
+        "NOME": "Stephen Adanson Roque",
+        "LOCAL": "NTS CONTRATOS",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      }
+    ],
+    "QPE": [
+      {
+        "NUMERO": "172994-6",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Jansley Gustavo Resende Ferreira",
+        "LOCAL": "NTS CONTRATOS",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      }
+    ]
+  },
+  "NTS TELECOM": {
+    "OF": [
+      {
+        "NUMERO": "128.010-6",
+        "POST/GRAD": "Cap",
+        "NOME": "Alexandre de Almeida Teixeira",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "OF"
+      }
+    ],
+    "SGT": [
+      {
+        "NUMERO": "128.127-8",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Alexandre Mamede da Silva",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "131.824-5",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Emiliano Pires Normandia",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "132.079-5",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Rodrigo Goncalves Martins",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      }
+    ],
+    "QPE": [
+      {
+        "NUMERO": "172.977-1",
+        "POST/GRAD": "Cb",
+        "NOME": "Aldair Gonçalves Carneiro Júnior",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "179.464-3",
+        "POST/GRAD": "Sd",
+        "NOME": "Luis Fernando Eleuterio",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      }
+    ],
+    "CB/SD": [
+      {
+        "NUMERO": "182.290-7",
+        "POST/GRAD": "Sd",
+        "NOME": "Bruno Nogueira Martins Cardoso",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      },
+      {
+        "NUMERO": "xxx.xxx-x",
+        "POST/GRAD": "Sd",
+        "NOME": "Inexistente",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      },
+      {
+        "NUMERO": "xxx.xxx-x",
+        "POST/GRAD": "Sd",
+        "NOME": "Inexistente",
+        "LOCAL": "NTS TELECOM",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      }
+    ]
+  },
+  "NST INFORMATICA": {
+    "OF": [
+      {
+        "NUMERO": "109.625-4",
+        "POST/GRAD": "2º Ten",
+        "NOME": "Helbert Jorge Xavier de Assis",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "OF"
+      }
+    ],
+    "SGT": [
+      {
+        "NUMERO": "136.067-6",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Jairo Mendes Ruas Junior",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      }
+    ],
+    "QPE": [
+      {
+        "NUMERO": "173.011-8",
+        "POST/GRAD": "Cb",
+        "NOME": "Mariana Santana Flavio",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "173.015-9",
+        "POST/GRAD": "Cb",
+        "NOME": "Aquiles Iago Nery S de Oliveira",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "179.698-6",
+        "POST/GRAD": "Sd",
+        "NOME": "Daniel Guilherme Lisboa da Cunha",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      }
+    ],
+    "CB/SD": [
+      {
+        "NUMERO": "xxx.xxx-x",
+        "POST/GRAD": "Sd",
+        "NOME": "Inexistente",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      },
+      {
+        "NUMERO": "xxx.xxx-x",
+        "POST/GRAD": "Sd",
+        "NOME": "Inexistente",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      },
+      {
+        "NUMERO": "xxx.xxx-x",
+        "POST/GRAD": "Sd",
+        "NOME": "Inexistente",
+        "LOCAL": "NST INFORMATICA",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      }
+    ]
+  },
+  "SDTS": {
+    "OF": [
+      {
+        "NUMERO": "133.350-9",
+        "POST/GRAD": "Maj",
+        "NOME": "Gustavo Couto de Oliveira",
+        "LOCAL": "SDTS",
+        "FUNÇÃO": "CMTE",
+        "CLASSE": "OF"
+      }
+    ]
+  },
+  "SDTS1": {
+    "OF": [
+      {
+        "NUMERO": "133.350-9",
+        "POST/GRAD": "Maj",
+        "NOME": "Gustavo Couto de Oliveira",
+        "LOCAL": "SDTS1",
+        "FUNÇÃO": "CHEFE",
+        "CLASSE": "OF"
+      },
+      {
+        "NUMERO": "167.497-7",
+        "POST/GRAD": "1º Ten",
+        "NOME": "Guilherme de Paiva Pacheco",
+        "LOCAL": "SDTS1",
+        "FUNÇÃO": "ADJ",
+        "CLASSE": "OF"
+      }
+    ],
+    "QPE": [
+      {
+        "NUMERO": "143.091-7",
+        "POST/GRAD": "1º Sgt",
+        "NOME": "Sergio Ricardo Timoteo Brito",
+        "LOCAL": "SDTS1",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      }
+    ],
+    "SGT": [
+      {
+        "NUMERO": "127.107-1",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Leonardo Alexandre da Silva Caetano",
+        "LOCAL": "SDTS1",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "xxx.xxx-x",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Inexistente",
+        "LOCAL": "SDTS1",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      }
+    ],
+    "CB/SD": [
+      {
+        "NUMERO": "155.248-8",
+        "POST/GRAD": "Cb",
+        "NOME": "Charles Vasconcelos Macena de Paula",
+        "LOCAL": "SDTS1",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      }
+    ]
+  },
+  "SDTS2": {
+    "OF": [
+      {
+        "NUMERO": "094.696-2",
+        "POST/GRAD": "Maj",
+        "NOME": "Giovanny Cesar de Abreu",
+        "LOCAL": "SDTS2",
+        "FUNÇÃO": "CHEFE",
+        "CLASSE": "OF"
+      },
+      {
+        "NUMERO": "150242-6",
+        "POST/GRAD": "Cap",
+        "NOME": "Silvane Priscila Adonay Martins",
+        "LOCAL": "SDTS2",
+        "FUNÇÃO": "ADJ",
+        "CLASSE": "OF"
+      }
+    ],
+    "QPE": [
+      {
+        "NUMERO": "143.090-9",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Sergio Leonardo da Conceicao Silva",
+        "LOCAL": "SDTS2",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "173.003-5",
+        "POST/GRAD": "Cb",
+        "NOME": "Pedro Henrique Zenatelli Coutinho",
+        "LOCAL": "SDTS2",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      }
+    ],
+    "CB/SD": [
+      {
+        "NUMERO": "172.816-1",
+        "POST/GRAD": "Cb",
+        "NOME": "Edgar Filgueira Rocha",
+        "LOCAL": "SDTS2",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      }
+    ]
+  },
+  "SDTS3": {
+    "OF": [
+      {
+        "NUMERO": "136875-2",
+        "POST/GRAD": "Maj",
+        "NOME": "Fabricio Rocha Xavier",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "CHEFE",
+        "CLASSE": "OF"
+      },
+      {
+        "NUMERO": "142.924-0",
+        "POST/GRAD": "Cap",
+        "NOME": "Cleyton Batista de Jesus",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "ADJ",
+        "CLASSE": "OF"
+      },
+      {
+        "NUMERO": "160.363-8",
+        "POST/GRAD": "Cap",
+        "NOME": "Davi Braga Linke",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "OF"
+      }
+    ],
+    "QPE": [
+      {
+        "NUMERO": "143.088-3",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Ricardo Costa dos Santos Oliveira",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "143.085-9",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Marcelo Sandro Alves",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "172.986-2",
+        "POST/GRAD": "Cb",
+        "NOME": "Priscila Martins de Souza",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "179.423-9",
+        "POST/GRAD": "Sd",
+        "NOME": "Amanda Fernandes Pereira",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "184.407-5",
+        "POST/GRAD": "Sd",
+        "NOME": "Renato Figueiredo Frade",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "184.378-8",
+        "POST/GRAD": "Sd",
+        "NOME": "Igor Mendes Viana De Castro",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "184.352-3",
+        "POST/GRAD": "Sd",
+        "NOME": "Caio Henrique Teixeira",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      },
+      {
+        "NUMERO": "184.400-0",
+        "POST/GRAD": "Sd",
+        "NOME": "Weder Gabriel Lopes De Oliveira",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "QPE"
+      }
+    ],
+    "SGT": [
+      {
+        "NUMERO": "108.955-6",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Jefferson Barcelos dos Santos",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "135.995-9",
+        "POST/GRAD": "3º Sgt",
+        "NOME": "Bruce Emmanuel Sueira",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      },
+      {
+        "NUMERO": "163.728-9",
+        "POST/GRAD": "2º Sgt",
+        "NOME": "Israel Gustavo Damasio Araujo",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "SGT"
+      }
+    ],
+    "CB/SD": [
+      {
+        "NUMERO": "179.643-2",
+        "POST/GRAD": "Sd",
+        "NOME": "Matheus Paiva Costa",
+        "LOCAL": "SDTS3",
+        "FUNÇÃO": "AUX",
+        "CLASSE": "CB/SD"
+      }
+    ]
+  }
+}
