@@ -175,6 +175,11 @@ function initTabs() {
             // Adicionar active na tab clicada
             tab.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+            
+            // Renderizar análise se for a aba de análise
+            if (tabName === 'analise') {
+                renderAnalise();
+            }
         });
     });
 }
@@ -1049,6 +1054,224 @@ function setupOrgButtons() {
     
 }
 
+// ============================================
+// ANÁLISE DDQOD
+// ============================================
+
+// Dados previstos no DDQOD
+const ddqodPrevisto = {
+    'SDTS': {
+        'TCEL': 1,
+        'MAJ': 3,
+        'CAP': 1,
+        'TEN': 1,
+        'OF - QOE': 0,
+        'ST/SGT': 4,
+        'CB/SD': 3,
+        'PR - QPE': 4
+    },
+    'NTS': {
+        'TCEL': 0,
+        'MAJ': 1,
+        'CAP': 1,
+        'TEN': 1,
+        'OF - QOE': 1,
+        'ST/SGT': 8,
+        'CB/SD': 7,
+        'PR - QPE': 11
+    }
+};
+
+function mapPostoToCategory(posto, classe) {
+    // Se tem classe QPE, conta como PR - QPE
+    if (classe === 'QPE') {
+        return 'PR - QPE';
+    }
+    
+    // Se tem classe QOE, conta como OF - QOE
+    if (classe === 'QOE') {
+        return 'OF - QOE';
+    }
+    
+    // Mapeamento por posto/graduação
+    const mapping = {
+        'Ten Cel': 'TCEL',
+        'Maj': 'MAJ',
+        'Cap': 'CAP',
+        '1º Ten': 'TEN',
+        '2º Ten': 'TEN',
+        'Sub Ten': 'ST/SGT',
+        '1º Sgt': 'ST/SGT',
+        '2º Sgt': 'ST/SGT',
+        '3º Sgt': 'ST/SGT',
+        'Cb': 'CB/SD',
+        'Sd': 'CB/SD'
+    };
+    
+    return mapping[posto] || posto;
+}
+
+function calcularExistente() {
+    const existente = {};
+    
+    // Filtrar apenas SDTS e NTS/NST (pode ter variações como SDTS1, SDTS2, NTS INFORMATICA, NST INFORMATICA, etc)
+    const pessoasRelevantes = getUniquePessoas(flatData).filter(p => {
+        const local = p.LOCAL.toUpperCase();
+        return local === 'SDTS' || local === 'NTS' || 
+               local.startsWith('SDTS') || local.startsWith('NTS') || local.startsWith('NST');
+    });
+    
+    pessoasRelevantes.forEach(pessoa => {
+        // Determinar a seção base (SDTS ou NTS)
+        const localUpper = pessoa.LOCAL.toUpperCase();
+        const secaoBase = (localUpper.startsWith('NTS') || localUpper.startsWith('NST')) ? 'NTS' : 'SDTS';
+        
+        if (!existente[secaoBase]) {
+            existente[secaoBase] = {
+                'TCEL': 0,
+                'MAJ': 0,
+                'CAP': 0,
+                'TEN': 0,
+                'OF - QOE': 0,
+                'ST/SGT': 0,
+                'CB/SD': 0,
+                'PR - QPE': 0
+            };
+        }
+        
+        const categoria = mapPostoToCategory(pessoa['POST/GRAD'], pessoa.CLASSE);
+        if (existente[secaoBase][categoria] !== undefined) {
+            existente[secaoBase][categoria]++;
+        }
+    });
+    
+    return existente;
+}
+
+function renderAnalise() {
+    const existente = calcularExistente();
+    
+    // Calcular totais
+    let totalPrevisto = 0;
+    let totalExistente = 0;
+    let totalDeficit = 0;
+    let totalExcedente = 0;
+    
+    Object.keys(ddqodPrevisto).forEach(secao => {
+        Object.keys(ddqodPrevisto[secao]).forEach(cat => {
+            const prev = ddqodPrevisto[secao][cat];
+            const exist = (existente[secao] && existente[secao][cat]) || 0;
+            
+            totalPrevisto += prev;
+            totalExistente += exist;
+            
+            const diff = exist - prev;
+            if (diff < 0) {
+                totalDeficit += Math.abs(diff);
+            } else if (diff > 0) {
+                totalExcedente += diff;
+            }
+        });
+    });
+    
+    // Atualizar resumo
+    document.getElementById('totalPrevisto').textContent = totalPrevisto;
+    document.getElementById('totalExistente').textContent = totalExistente;
+    document.getElementById('totalDeficit').textContent = totalDeficit;
+    document.getElementById('totalExcedente').textContent = totalExcedente;
+    
+    // Renderizar análise por seção
+    const container = document.getElementById('analiseSections');
+    container.innerHTML = '';
+    
+    Object.keys(ddqodPrevisto).forEach(secao => {
+        const previstoSecao = ddqodPrevisto[secao];
+        const existenteSecao = existente[secao] || {};
+        
+        let deficitSecao = 0;
+        let excedenteSecao = 0;
+        
+        const itemsHTML = Object.keys(previstoSecao).map(categoria => {
+            const prev = previstoSecao[categoria];
+            const exist = existenteSecao[categoria] || 0;
+            const diff = exist - prev;
+            
+            if (diff < 0) deficitSecao += Math.abs(diff);
+            if (diff > 0) excedenteSecao += diff;
+            
+            let status = 'ok';
+            let statusText = 'OK';
+            if (diff < 0) {
+                status = 'deficit';
+                statusText = `Faltam ${Math.abs(diff)}`;
+            } else if (diff > 0) {
+                status = 'excedente';
+                statusText = `Excesso de ${diff}`;
+            }
+            
+            const percentage = prev > 0 ? Math.min((exist / prev) * 100, 150) : (exist > 0 ? 150 : 0);
+            let barClass = 'complete';
+            if (exist < prev) barClass = 'under';
+            else if (exist > prev) barClass = 'over';
+            
+            return `
+                <div class="analise-item">
+                    <div class="analise-item-header">
+                        <div class="analise-item-title">${categoria}</div>
+                        <div class="analise-item-badge ${status}">${statusText}</div>
+                    </div>
+                    <div class="analise-item-body">
+                        <div class="analise-row">
+                            <span class="analise-label"><i class="fas fa-clipboard-list"></i> Previsto</span>
+                            <span class="analise-value previsto">${prev}</span>
+                        </div>
+                        <div class="analise-row">
+                            <span class="analise-label"><i class="fas fa-user-check"></i> Existente</span>
+                            <span class="analise-value existente">${exist}</span>
+                        </div>
+                        <div class="analise-row">
+                            <span class="analise-label"><i class="fas fa-balance-scale"></i> Diferença</span>
+                            <span class="analise-value ${status}">${diff > 0 ? '+' : ''}${diff}</span>
+                        </div>
+                        <div class="analise-bar">
+                            <div class="analise-bar-fill ${barClass}" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        let secaoStatus = 'ok';
+        let secaoStatusText = 'Completo';
+        if (deficitSecao > 0) {
+            secaoStatus = 'deficit';
+            secaoStatusText = `Déficit de ${deficitSecao}`;
+        } else if (excedenteSecao > 0) {
+            secaoStatus = 'excedente';
+            secaoStatusText = `Excedente de ${excedenteSecao}`;
+        }
+        
+        container.innerHTML += `
+            <div class="analise-section">
+                <div class="analise-section-header">
+                    <h2 class="analise-section-title">
+                        <i class="fas fa-building"></i>
+                        ${secao}
+                    </h2>
+                    <div class="analise-section-status">
+                        <div class="status-badge ${secaoStatus}">
+                            <i class="fas fa-${secaoStatus === 'ok' ? 'check-circle' : secaoStatus === 'deficit' ? 'exclamation-circle' : 'info-circle'}"></i>
+                            ${secaoStatusText}
+                        </div>
+                    </div>
+                </div>
+                <div class="analise-grid">
+                    ${itemsHTML}
+                </div>
+            </div>
+        `;
+    });
+}
 
 // ============================================
 // FUNÇÕES GLOBAIS (para onclick)

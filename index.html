@@ -29,6 +29,10 @@
                     <i class="fas fa-sitemap"></i>
                     Organograma
                 </button>
+                <button class="nav-tab" data-tab="analise">
+                    <i class="fas fa-chart-line"></i>
+                    Análise DDQOD
+                </button>
             </nav>
             <div class="header-actions">
                 <span class="date-display"></span>
@@ -239,6 +243,60 @@
                     <!-- Organograma será gerado via JavaScript -->
                 </div>
             </div>
+        </section>
+
+        <!-- Análise DDQOD Section -->
+        <section class="tab-content" id="analise">
+            <div class="section-header">
+                <h1><i class="fas fa-balance-scale"></i> Análise DDQOD - Previsto vs Existente</h1>
+                <p>Comparativo entre o efetivo previsto no DDQOD e o efetivo atual</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    <i class="fas fa-calendar-alt"></i> Última atualização: RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025
+                </p>
+            </div>
+
+            <!-- Resumo Geral -->
+            <div class="analise-summary">
+                <div class="summary-card summary-total">
+                    <div class="summary-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Total Previsto</h3>
+                        <div class="summary-value" id="totalPrevisto">0</div>
+                    </div>
+                </div>
+                <div class="summary-card summary-atual">
+                    <div class="summary-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Total Existente</h3>
+                        <div class="summary-value" id="totalExistente">0</div>
+                    </div>
+                </div>
+                <div class="summary-card summary-deficit">
+                    <div class="summary-icon">
+                        <i class="fas fa-user-minus"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Déficit Total</h3>
+                        <div class="summary-value" id="totalDeficit">0</div>
+                    </div>
+                </div>
+                <div class="summary-card summary-excedente">
+                    <div class="summary-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>Excedente Total</h3>
+                        <div class="summary-value" id="totalExcedente">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Análise por Seção -->
+            <div class="analise-sections" id="analiseSections"></div>
         </section>
     </main>
 
