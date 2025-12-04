@@ -8,6 +8,52 @@ let currentPage = 1;
 const itemsPerPage = 20;
 let sortColumn = null;
 let sortDirection = 'asc';
+let chartClasse = null;
+let chartUnidade = null;
+
+// ============================================
+// TOAST NOTIFICATIONS
+// ============================================
+function showToast(message, type = 'success', title = '') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    const titles = {
+        success: title || 'Sucesso!',
+        error: title || 'Erro!',
+        warning: title || 'Atenção!',
+        info: title || 'Informação'
+    };
+    
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="fas ${icons[type]}"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">${titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto remover após 4 segundos
+    setTimeout(() => {
+        toast.style.animation = 'toastSlideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
 
 // ============================================
 // INICIALIZAÇÃO
@@ -51,10 +97,49 @@ async function loadData() {
         });
         
         filteredData = [...flatData];
+        showToast(`${flatData.length} registros carregados (${getUniqueCount(flatData)} militares únicos)`, 'info', 'Dados Carregados');
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
-        alert('Erro ao carregar dados do arquivo JSON');
+        showToast('Não foi possível carregar os dados do arquivo JSON', 'error', 'Erro ao Carregar');
     }
+}
+
+// Função para contar militares únicos (não conta duplicados, exceto xxx.xxx-x)
+function getUniqueCount(pessoas) {
+    const numeros = new Set();
+    let count = 0;
+    
+    pessoas.forEach(p => {
+        if (p.NUMERO === 'xxx.xxx-x') {
+            // Sempre conta inexistentes
+            count++;
+        } else if (!numeros.has(p.NUMERO)) {
+            // Conta apenas a primeira ocorrência do número
+            numeros.add(p.NUMERO);
+            count++;
+        }
+    });
+    
+    return count;
+}
+
+// Função para obter pessoas únicas (mantém primeira ocorrência de cada número)
+function getUniquePessoas(pessoas) {
+    const numeros = new Set();
+    const unique = [];
+    
+    pessoas.forEach(p => {
+        if (p.NUMERO === 'xxx.xxx-x') {
+            // Sempre inclui inexistentes
+            unique.push(p);
+        } else if (!numeros.has(p.NUMERO)) {
+            // Inclui apenas a primeira ocorrência
+            numeros.add(p.NUMERO);
+            unique.push(p);
+        }
+    });
+    
+    return unique;
 }
 
 // ============================================
@@ -105,9 +190,10 @@ function initDashboard() {
 }
 
 function updateKPIs() {
-    const totalEfetivo = flatData.length;
-    const oficiais = flatData.filter(p => p.CLASSE === 'OF').length;
-    const pracas = flatData.filter(p => p.CLASSE !== 'OF').length;
+    const totalEfetivo = getUniqueCount(flatData);
+    const uniquePessoas = getUniquePessoas(flatData);
+    const oficiais = uniquePessoas.filter(p => p.CLASSE === 'OF' || p.CLASSE === 'QOE').length;
+    const pracas = uniquePessoas.filter(p => p.CLASSE === 'CB/SD' || p.CLASSE === 'SGT' || p.CLASSE === 'QPE').length;
     const unidades = Object.keys(data).length;
     
     document.getElementById('totalEfetivo').textContent = totalEfetivo;
@@ -124,9 +210,15 @@ function renderCharts() {
 function renderClassChart() {
     const ctx = document.getElementById('chartClasse');
     
-    // Contar por classe
+    // Destruir gráfico existente
+    if (chartClasse) {
+        chartClasse.destroy();
+    }
+    
+    // Contar por classe (apenas pessoas únicas)
+    const uniquePessoas = getUniquePessoas(flatData);
     const classeCount = {};
-    flatData.forEach(p => {
+    uniquePessoas.forEach(p => {
         classeCount[p.CLASSE] = (classeCount[p.CLASSE] || 0) + 1;
     });
     
@@ -138,7 +230,7 @@ function renderClassChart() {
         'CB/SD': '#38a169'
     };
     
-    new Chart(ctx, {
+    chartClasse = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: Object.keys(classeCount),
@@ -179,7 +271,12 @@ function renderClassChart() {
 function renderUnidadeChart() {
     const ctx = document.getElementById('chartUnidade');
     
-    // Contar por unidade
+    // Destruir gráfico existente
+    if (chartUnidade) {
+        chartUnidade.destroy();
+    }
+    
+    // Contar por unidade (precisa contar com duplicatas para mostrar alocações)
     const unidadeCount = {};
     flatData.forEach(p => {
         unidadeCount[p.LOCAL] = (unidadeCount[p.LOCAL] || 0) + 1;
@@ -188,12 +285,12 @@ function renderUnidadeChart() {
     // Ordenar por quantidade
     const sorted = Object.entries(unidadeCount).sort((a, b) => b[1] - a[1]);
     
-    new Chart(ctx, {
+    chartUnidade = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: sorted.map(s => s[0]),
             datasets: [{
-                label: 'Efetivo',
+                label: 'Alocações',
                 data: sorted.map(s => s[1]),
                 backgroundColor: '#3182ce',
                 borderRadius: 8,
@@ -210,7 +307,7 @@ function renderUnidadeChart() {
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            return `Efetivo: ${context.parsed.y}`;
+                            return `Alocações: ${context.parsed.y}`;
                         }
                     }
                 }
@@ -239,12 +336,15 @@ function renderStats() {
 }
 
 function renderFuncaoStats() {
+    // Usar pessoas únicas
+    const uniquePessoas = getUniquePessoas(flatData);
+    
     const funcaoCount = {};
-    flatData.forEach(p => {
+    uniquePessoas.forEach(p => {
         funcaoCount[p.FUNÇÃO] = (funcaoCount[p.FUNÇÃO] || 0) + 1;
     });
     
-    const total = flatData.length;
+    const total = uniquePessoas.length;
     const container = document.getElementById('funcaoStats');
     
     const sorted = Object.entries(funcaoCount).sort((a, b) => b[1] - a[1]);
@@ -271,12 +371,15 @@ function renderFuncaoStats() {
 }
 
 function renderPostoStats() {
+    // Usar pessoas únicas
+    const uniquePessoas = getUniquePessoas(flatData);
+    
     const postoCount = {};
-    flatData.forEach(p => {
+    uniquePessoas.forEach(p => {
         postoCount[p['POST/GRAD']] = (postoCount[p['POST/GRAD']] || 0) + 1;
     });
     
-    const total = flatData.length;
+    const total = uniquePessoas.length;
     const container = document.getElementById('postoStats');
     
     // Ordem hierárquica
@@ -311,15 +414,24 @@ function renderUnitCards() {
     
     container.innerHTML = Object.keys(data).map(local => {
         const unidadeData = data[local];
-        const total = Object.keys(unidadeData).reduce((sum, classe) => {
-            return sum + unidadeData[classe].length;
-        }, 0);
         
+        // Coletar todas as pessoas desta unidade
+        const allPessoasUnidade = [];
+        Object.values(unidadeData).forEach(pessoas => {
+            allPessoasUnidade.push(...pessoas);
+        });
+        
+        // Contar únicos nesta unidade
+        const total = getUniqueCount(allPessoasUnidade);
+        
+        // Contar por classe (usando pessoas únicas)
+        const uniquePessoasUnidade = getUniquePessoas(allPessoasUnidade);
         const classeStats = Object.keys(unidadeData).map(classe => {
+            const count = uniquePessoasUnidade.filter(p => p.CLASSE === classe).length;
             return `
                 <div class="unit-stat">
                     <span class="unit-stat-label">${classe}</span>
-                    <span class="unit-stat-value">${unidadeData[classe].length}</span>
+                    <span class="unit-stat-value">${count}</span>
                 </div>
             `;
         }).join('');
@@ -347,6 +459,7 @@ function initTable() {
     setupSortListeners();
     renderTable();
     setupExport();
+    setupModalEvents();
 }
 
 function populateFilters() {
@@ -481,7 +594,14 @@ function renderTable() {
     const end = start + itemsPerPage;
     const pageData = filteredData.slice(start, end);
     
-    tbody.innerHTML = pageData.map(pessoa => `
+    tbody.innerHTML = pageData.map((pessoa, index) => {
+        const globalIndex = flatData.findIndex(p => 
+            p.NUMERO === pessoa.NUMERO && 
+            p.NOME === pessoa.NOME && 
+            p.LOCAL === pessoa.LOCAL
+        );
+        
+        return `
         <tr>
             <td>${pessoa.NUMERO}</td>
             <td><strong>${pessoa['POST/GRAD']}</strong></td>
@@ -489,8 +609,19 @@ function renderTable() {
             <td>${pessoa.LOCAL}</td>
             <td><span class="badge badge-${pessoa.FUNÇÃO.toLowerCase()}">${pessoa.FUNÇÃO}</span></td>
             <td><span class="badge badge-${pessoa.CLASSE.toLowerCase().replace('/', '')}">${pessoa.CLASSE}</span></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-edit" onclick="editMilitar(${globalIndex})">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn-delete" onclick="deleteMilitar(${globalIndex})">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                </div>
+            </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
     
     updateResultsInfo();
     renderPagination();
@@ -575,6 +706,172 @@ function exportToCSV() {
 }
 
 // ============================================
+// MODAL E CRUD
+// ============================================
+function setupModalEvents() {
+    const modal = document.getElementById('militarModal');
+    const overlay = document.getElementById('modalOverlay');
+    const closeBtn = document.getElementById('modalClose');
+    const cancelBtn = document.getElementById('btnCancel');
+    const addBtn = document.getElementById('addMilitarBtn');
+    const form = document.getElementById('militarForm');
+    
+    // Abrir modal para adicionar
+    addBtn.addEventListener('click', () => {
+        openModal();
+    });
+    
+    // Fechar modal
+    const closeModal = () => {
+        modal.classList.remove('active');
+        form.reset();
+        document.getElementById('editIndex').value = '';
+    };
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+    
+    // Submeter formulário
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveMilitar();
+    });
+}
+
+function openModal(index = null) {
+    const modal = document.getElementById('militarModal');
+    const form = document.getElementById('militarForm');
+    const title = document.getElementById('modalTitle');
+    
+    if (index !== null) {
+        // Editar
+        title.innerHTML = '<i class="fas fa-user-edit"></i> Editar Militar';
+        const pessoa = flatData[index];
+        
+        document.getElementById('editIndex').value = index;
+        document.getElementById('inputNumero').value = pessoa.NUMERO;
+        document.getElementById('inputPostoGrad').value = pessoa['POST/GRAD'];
+        document.getElementById('inputNome').value = pessoa.NOME;
+        document.getElementById('inputLocal').value = pessoa.LOCAL;
+        document.getElementById('inputFuncao').value = pessoa.FUNÇÃO;
+        document.getElementById('inputClasse').value = pessoa.CLASSE;
+    } else {
+        // Adicionar
+        title.innerHTML = '<i class="fas fa-user-plus"></i> Adicionar Militar';
+        form.reset();
+        document.getElementById('editIndex').value = '';
+    }
+    
+    modal.classList.add('active');
+}
+
+function saveMilitar() {
+    const editIndex = document.getElementById('editIndex').value;
+    
+    const militar = {
+        NUMERO: document.getElementById('inputNumero').value,
+        'POST/GRAD': document.getElementById('inputPostoGrad').value,
+        NOME: document.getElementById('inputNome').value,
+        LOCAL: document.getElementById('inputLocal').value,
+        FUNÇÃO: document.getElementById('inputFuncao').value,
+        CLASSE: document.getElementById('inputClasse').value
+    };
+    
+    if (editIndex !== '') {
+        // Editar existente
+        const index = parseInt(editIndex);
+        const oldMilitar = flatData[index];
+        
+        // Remover do objeto data
+        const localData = data[oldMilitar.LOCAL];
+        if (localData && localData[oldMilitar.CLASSE]) {
+            const arr = localData[oldMilitar.CLASSE];
+            const idx = arr.findIndex(p => 
+                p.NUMERO === oldMilitar.NUMERO && 
+                p.NOME === oldMilitar.NOME
+            );
+            if (idx !== -1) {
+                arr.splice(idx, 1);
+                if (arr.length === 0) {
+                    delete localData[oldMilitar.CLASSE];
+                }
+            }
+        }
+        
+        // Atualizar flatData
+        flatData[index] = militar;
+    } else {
+        // Adicionar novo
+        flatData.push(militar);
+    }
+    
+    // Adicionar ao objeto data
+    if (!data[militar.LOCAL]) {
+        data[militar.LOCAL] = {};
+    }
+    if (!data[militar.LOCAL][militar.CLASSE]) {
+        data[militar.LOCAL][militar.CLASSE] = [];
+    }
+    data[militar.LOCAL][militar.CLASSE].push(militar);
+    
+    // Fechar modal
+    document.getElementById('militarModal').classList.remove('active');
+    document.getElementById('militarForm').reset();
+    
+    // Atualizar interface
+    filteredData = [...flatData];
+    initDashboard();
+    applyFilters();
+    
+    // Mensagem de sucesso
+    if (editIndex !== '') {
+        showToast(`Militar ${militar['POST/GRAD']} ${militar.NOME} atualizado com sucesso!`, 'success');
+    } else {
+        showToast(`Militar ${militar['POST/GRAD']} ${militar.NOME} adicionado com sucesso!`, 'success');
+    }
+}
+
+function editMilitar(index) {
+    openModal(index);
+}
+
+function deleteMilitar(index) {
+    const pessoa = flatData[index];
+    const nome = `${pessoa['POST/GRAD']} ${pessoa.NOME}`;
+    
+    if (!confirm(`Tem certeza que deseja excluir ${nome}?`)) {
+        return;
+    }
+    
+    // Remover do objeto data
+    const localData = data[pessoa.LOCAL];
+    if (localData && localData[pessoa.CLASSE]) {
+        const arr = localData[pessoa.CLASSE];
+        const idx = arr.findIndex(p => 
+            p.NUMERO === pessoa.NUMERO && 
+            p.NOME === pessoa.NOME
+        );
+        if (idx !== -1) {
+            arr.splice(idx, 1);
+            if (arr.length === 0) {
+                delete localData[pessoa.CLASSE];
+            }
+        }
+    }
+    
+    // Remover do flatData
+    flatData.splice(index, 1);
+    
+    // Atualizar interface
+    filteredData = [...flatData];
+    initDashboard();
+    applyFilters();
+    
+    showToast(`${nome} foi excluído com sucesso!`, 'success');
+}
+
+// ============================================
 // ORGANOGRAMA
 // ============================================
 function initOrganograma() {
@@ -601,6 +898,9 @@ function initOrganograma() {
     
     // Adicionar eventos de clique
     setupOrgClickEvents();
+    
+    // Adicionar eventos dos botões
+    setupOrgButtons();
 }
 
 function renderOrgNode(node, level = 0) {
@@ -619,9 +919,11 @@ function renderOrgNode(node, level = 0) {
     `;
     
     // Detalhes expandíveis
-    html += `<div class="org-details" data-details="${node.name}">`;
-    html += renderOrgDetails(node.name);
-    html += '</div>';
+    if (nodeData) {
+        html += `<div class="org-details" data-details="${node.name}">`;
+        html += renderOrgDetails(node.name);
+        html += '</div>';
+    }
     
     // Renderizar filhos
     if (node.children && node.children.length > 0) {
@@ -713,12 +1015,11 @@ function toggleOrgDetails(local, box) {
     const details = document.querySelector(`[data-details="${local}"]`);
     const isVisible = details.classList.contains('show');
     
-    // Fechar todos os detalhes
-    document.querySelectorAll('.org-details').forEach(d => d.classList.remove('show'));
-    document.querySelectorAll('.org-box').forEach(b => b.classList.remove('expanded'));
-    
-    // Abrir se não estava visível
-    if (!isVisible) {
+    // Apenas alternar o estado do clicado (permite múltiplos abertos)
+    if (isVisible) {
+        details.classList.remove('show');
+        box.classList.remove('expanded');
+    } else {
         details.classList.add('show');
         box.classList.add('expanded');
         box.classList.add('highlight');
@@ -733,8 +1034,26 @@ function closeOrgDetails(local) {
     box.classList.remove('expanded');
 }
 
+function setupOrgButtons() {
+    // Expandir todos
+    document.getElementById('expandAllOrg').addEventListener('click', () => {
+        document.querySelectorAll('.org-details').forEach(d => d.classList.add('show'));
+        document.querySelectorAll('.org-box').forEach(b => b.classList.add('expanded'));
+    });
+    
+    // Recolher todos
+    document.getElementById('collapseAllOrg').addEventListener('click', () => {
+        document.querySelectorAll('.org-details').forEach(d => d.classList.remove('show'));
+        document.querySelectorAll('.org-box').forEach(b => b.classList.remove('expanded'));
+    });
+    
+}
+
+
 // ============================================
 // FUNÇÕES GLOBAIS (para onclick)
 // ============================================
 window.changePage = changePage;
 window.closeOrgDetails = closeOrgDetails;
+window.editMilitar = editMilitar;
+window.deleteMilitar = deleteMilitar;

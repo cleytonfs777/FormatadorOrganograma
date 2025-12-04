@@ -13,7 +13,7 @@
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <i class="fas fa-shield-alt"></i>
+                <img src="bombeiro.png" alt="Logo" style="height: 32px; width: auto; margin-right: 8px;">
                 <span>Sistema de Gestão de Efetivo</span>
             </div>
             <nav class="nav-tabs">
@@ -42,7 +42,7 @@
         <section id="dashboard" class="tab-content active">
             <div class="section-header">
                 <h1><i class="fas fa-chart-line"></i> Dashboard de Efetivo</h1>
-                <p>Visão geral do efetivo distribuído nas unidades</p>
+                <p>Visão geral do efetivo distribuído nas seções</p>
             </div>
 
             <!-- KPI Cards -->
@@ -78,9 +78,9 @@
                     <div class="kpi-icon">
                         <i class="fas fa-building"></i>
                     </div>
-                    <div class="kpi-info">
+                    <div class="kpi-content">
                         <span class="kpi-value" id="totalUnidades">0</span>
-                        <span class="kpi-label">Unidades</span>
+                        <span class="kpi-label">Seções</span>
                     </div>
                 </div>
             </div>
@@ -97,7 +97,7 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3><i class="fas fa-bar-chart"></i> Efetivo por Unidade</h3>
+                        <h3><i class="fas fa-bar-chart"></i> Efetivo por Seção</h3>
                     </div>
                     <div class="chart-body">
                         <canvas id="chartUnidade"></canvas>
@@ -123,7 +123,7 @@
 
             <!-- Detailed Unit Cards -->
             <div class="unit-cards-container">
-                <h2 class="section-title"><i class="fas fa-building"></i> Detalhamento por Unidade</h2>
+                <h2 class="section-title"><i class="fas fa-building"></i> Detalhamento por Seção</h2>
                 <div class="unit-cards" id="unitCards"></div>
             </div>
         </section>
@@ -167,9 +167,14 @@
             <!-- Results Info -->
             <div class="results-info">
                 <span id="resultsCount">0 registros encontrados</span>
-                <button class="btn-export" id="exportBtn">
-                    <i class="fas fa-file-excel"></i> Exportar
-                </button>
+                <div class="results-actions">
+                    <button class="btn-add-militar" id="addMilitarBtn">
+                        <i class="fas fa-user-plus"></i> Adicionar Militar
+                    </button>
+                    <button class="btn-export" id="exportBtn">
+                        <i class="fas fa-file-excel"></i> Exportar
+                    </button>
+                </div>
             </div>
 
             <!-- Table -->
@@ -183,6 +188,7 @@
                             <th data-sort="LOCAL">Local <i class="fas fa-sort"></i></th>
                             <th data-sort="FUNÇÃO">Função <i class="fas fa-sort"></i></th>
                             <th data-sort="CLASSE">Classe <i class="fas fa-sort"></i></th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -217,6 +223,14 @@
                 <div class="legend-tip">
                     <i class="fas fa-hand-pointer"></i> Clique nos blocos para expandir
                 </div>
+                <div class="org-actions">
+                    <button class="btn-org-expand" id="expandAllOrg">
+                        <i class="fas fa-expand-alt"></i> Expandir Todos
+                    </button>
+                    <button class="btn-org-collapse" id="collapseAllOrg">
+                        <i class="fas fa-compress-alt"></i> Recolher Todos
+                    </button>
+                </div>
             </div>
 
             <!-- Organogram Container -->
@@ -228,6 +242,102 @@
         </section>
     </main>
 
+    <!-- Modal para Adicionar/Editar Militar -->
+    <div class="modal" id="militarModal">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle"><i class="fas fa-user-edit"></i> Adicionar Militar</h2>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="militarForm">
+                    <input type="hidden" id="editIndex" value="">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="inputNumero"><i class="fas fa-id-card"></i> Número *</label>
+                            <input type="text" id="inputNumero" required placeholder="000.000-0">
+                        </div>
+                        <div class="form-group">
+                            <label for="inputPostoGrad"><i class="fas fa-medal"></i> Posto/Graduação *</label>
+                            <select id="inputPostoGrad" required>
+                                <option value="">Selecione</option>
+                                <option value="Maj">Maj</option>
+                                <option value="Cap">Cap</option>
+                                <option value="1º Ten">1º Ten</option>
+                                <option value="2º Ten">2º Ten</option>
+                                <option value="1º Sgt">1º Sgt</option>
+                                <option value="2º Sgt">2º Sgt</option>
+                                <option value="3º Sgt">3º Sgt</option>
+                                <option value="Cb">Cb</option>
+                                <option value="Sd">Sd</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputNome"><i class="fas fa-user"></i> Nome Completo *</label>
+                        <input type="text" id="inputNome" required placeholder="Nome completo do militar">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="inputLocal"><i class="fas fa-building"></i> Local *</label>
+                            <select id="inputLocal" required>
+                                <option value="">Selecione</option>
+                                <option value="SDTS">SDTS</option>
+                                <option value="SDTS1">SDTS1</option>
+                                <option value="SDTS2">SDTS2</option>
+                                <option value="SDTS3">SDTS3</option>
+                                <option value="NTS">NTS</option>
+                                <option value="NST INFORMATICA">NST INFORMATICA</option>
+                                <option value="NTS TELECOM">NTS TELECOM</option>
+                                <option value="NTS CONTRATOS">NTS CONTRATOS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="inputFuncao"><i class="fas fa-briefcase"></i> Função *</label>
+                            <select id="inputFuncao" required>
+                                <option value="">Selecione</option>
+                                <option value="CHEFE">CHEFE</option>
+                                <option value="CMTE">CMTE</option>
+                                <option value="ADJ">ADJ</option>
+                                <option value="AUX">AUX</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputClasse"><i class="fas fa-layer-group"></i> Classe *</label>
+                        <select id="inputClasse" required>
+                            <option value="">Selecione</option>
+                            <option value="OF">OF</option>
+                            <option value="SGT">SGT</option>
+                            <option value="QPE">QPE</option>
+                            <option value="QOE">QOE</option>
+                            <option value="CB/SD">CB/SD</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="btnCancel">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <!-- Footer -->
     <footer class="footer">
         <p>&copy; 2025 Sistema de Gestão de Efetivo - Todos os direitos reservados</p>
@@ -235,6 +345,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
