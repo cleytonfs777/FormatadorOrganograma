@@ -827,6 +827,8 @@ function saveMilitar() {
     // Atualizar interface
     filteredData = [...flatData];
     initDashboard();
+    // Re-renderizar organograma para refletir alterações
+    initOrganograma();
     applyFilters();
     
     // Mensagem de sucesso
@@ -871,6 +873,8 @@ function deleteMilitar(index) {
     // Atualizar interface
     filteredData = [...flatData];
     initDashboard();
+    // Re-renderizar organograma para refletir exclusão
+    initOrganograma();
     applyFilters();
     
     showToast(`${nome} foi excluído com sucesso!`, 'success');
