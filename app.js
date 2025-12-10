@@ -76,6 +76,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Inicializar organograma
     initOrganograma();
+    
+    // Inicializar botões de gerenciamento de dados
+    setupDataButtons();
 });
 
 // ============================================
@@ -83,8 +86,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ============================================
 async function loadData() {
     try {
-        const response = await fetch('base_organizacao.json');
-        data = await response.json();
+        // Tentar carregar do localStorage primeiro
+        const savedData = localStorage.getItem('efetivo_data');
+        
+        if (savedData) {
+            data = JSON.parse(savedData);
+            console.log('Dados carregados do localStorage');
+        } else {
+            // Se não existe no localStorage, carregar do JSON
+            const response = await fetch('base_organizacao.json');
+            data = await response.json();
+            // Salvar no localStorage para próximas vezes
+            localStorage.setItem('efetivo_data', JSON.stringify(data));
+            console.log('Dados carregados do arquivo JSON e salvos no localStorage');
+        }
         
         // Criar array flat para facilitar manipulação
         flatData = [];
@@ -101,6 +116,19 @@ async function loadData() {
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
         showToast('Não foi possível carregar os dados do arquivo JSON', 'error', 'Erro ao Carregar');
+    }
+}
+
+// Função para salvar dados no localStorage
+function saveDataToLocalStorage() {
+    try {
+        localStorage.setItem('efetivo_data', JSON.stringify(data));
+        console.log('Dados salvos no localStorage');
+        return true;
+    } catch (error) {
+        console.error('Erro ao salvar dados:', error);
+        showToast('Erro ao salvar dados localmente', 'error');
+        return false;
     }
 }
 
@@ -771,7 +799,7 @@ function openModal(index = null) {
     modal.classList.add('active');
 }
 
-function saveMilitar() {
+async function saveMilitar() {
     const editIndex = document.getElementById('editIndex').value;
     
     const militar = {
@@ -824,18 +852,23 @@ function saveMilitar() {
     document.getElementById('militarModal').classList.remove('active');
     document.getElementById('militarForm').reset();
     
-    // Atualizar interface
-    filteredData = [...flatData];
-    initDashboard();
-    // Re-renderizar organograma para refletir alterações
-    initOrganograma();
-    applyFilters();
+    // Salvar no localStorage
+    const saved = saveDataToLocalStorage();
     
-    // Mensagem de sucesso
-    if (editIndex !== '') {
-        showToast(`Militar ${militar['POST/GRAD']} ${militar.NOME} atualizado com sucesso!`, 'success');
-    } else {
-        showToast(`Militar ${militar['POST/GRAD']} ${militar.NOME} adicionado com sucesso!`, 'success');
+    if (saved) {
+        // Atualizar interface
+        filteredData = [...flatData];
+        initDashboard();
+        // Re-renderizar organograma para refletir alterações
+        initOrganograma();
+        applyFilters();
+        
+        // Mensagem de sucesso
+        if (editIndex !== '') {
+            showToast(`Militar ${militar['POST/GRAD']} ${militar.NOME} atualizado com sucesso!`, 'success');
+        } else {
+            showToast(`Militar ${militar['POST/GRAD']} ${militar.NOME} adicionado com sucesso!`, 'success');
+        }
     }
 }
 
@@ -843,7 +876,7 @@ function editMilitar(index) {
     openModal(index);
 }
 
-function deleteMilitar(index) {
+async function deleteMilitar(index) {
     const pessoa = flatData[index];
     const nome = `${pessoa['POST/GRAD']} ${pessoa.NOME}`;
     
@@ -870,14 +903,19 @@ function deleteMilitar(index) {
     // Remover do flatData
     flatData.splice(index, 1);
     
-    // Atualizar interface
-    filteredData = [...flatData];
-    initDashboard();
-    // Re-renderizar organograma para refletir exclusão
-    initOrganograma();
-    applyFilters();
+    // Salvar no localStorage
+    const saved = saveDataToLocalStorage();
     
-    showToast(`${nome} foi excluído com sucesso!`, 'success');
+    if (saved) {
+        // Atualizar interface
+        filteredData = [...flatData];
+        initDashboard();
+        // Re-renderizar organograma para refletir exclusão
+        initOrganograma();
+        applyFilters();
+        
+        showToast(`${nome} foi excluído com sucesso!`, 'success');
+    }
 }
 
 // ============================================
@@ -1055,7 +1093,57 @@ function setupOrgButtons() {
         document.querySelectorAll('.org-details').forEach(d => d.classList.remove('show'));
         document.querySelectorAll('.org-box').forEach(b => b.classList.remove('expanded'));
     });
+}
+
+// ============================================
+// GERENCIAMENTO DE DADOS (EXPORTAR/RESETAR)
+// ============================================
+
+function setupDataButtons() {
+    // Exportar dados
+    document.getElementById('exportDataBtn').addEventListener('click', () => {
+        try {
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `base_organizacao_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            showToast('Dados exportados com sucesso!', 'success', 'Exportação');
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+            showToast('Erro ao exportar dados', 'error');
+        }
+    });
     
+    // Resetar dados
+    document.getElementById('resetDataBtn').addEventListener('click', async () => {
+        if (!confirm('Tem certeza que deseja resetar os dados? Todas as alterações serão perdidas e os dados originais serão restaurados.')) {
+            return;
+        }
+        
+        try {
+            // Limpar localStorage
+            localStorage.removeItem('efetivo_data');
+            
+            // Recarregar do arquivo original
+            const response = await fetch('base_organizacao.json');
+            data = await response.json();
+            
+            // Salvar no localStorage
+            localStorage.setItem('efetivo_data', JSON.stringify(data));
+            
+            // Recarregar página para atualizar tudo
+            location.reload();
+            
+            showToast('Dados resetados com sucesso!', 'success', 'Reset');
+        } catch (error) {
+            console.error('Erro ao resetar:', error);
+            showToast('Erro ao resetar dados', 'error');
+        }
+    });
 }
 
 // ============================================
