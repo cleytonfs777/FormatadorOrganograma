@@ -1,0 +1,102 @@
+{
+  "info": {
+    "descricao": "Comparativo entre o efetivo previsto no DDQOD e o efetivo atual",
+    "ultimaAtualizacao": "RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025"
+  },
+  "grupos": [
+    {
+      "id": "sdts",
+      "nome": "SDTS",
+      "locais": ["SDTS", "SDTS1", "SDTS2", "SDTS3"]
+    },
+    {
+      "id": "nts",
+      "nome": "NTS",
+      "locais": ["NTS", "NST INFORMATICA", "NTS CONTRATOS", "NTS TELECOM"]
+    }
+  ],
+  "previsto": {
+    "SDTS": {
+      "TCEL": 1,
+      "MAJ": 1,
+      "CAP": 0,
+      "TEN": 0,
+      "OF - QOE": 0,
+      "ST/SGT": 1,
+      "CB/SD": 1,
+      "PR - QPE": 1
+    },
+    "SDTS1": {
+      "TCEL": 0,
+      "MAJ": 1,
+      "CAP": 0,
+      "TEN": 0,
+      "OF - QOE": 0,
+      "ST/SGT": 1,
+      "CB/SD": 1,
+      "PR - QPE": 1
+    },
+    "SDTS2": {
+      "TCEL": 0,
+      "MAJ": 1,
+      "CAP": 1,
+      "TEN": 0,
+      "OF - QOE": 0,
+      "ST/SGT": 1,
+      "CB/SD": 0,
+      "PR - QPE": 1
+    },
+    "SDTS3": {
+      "TCEL": 0,
+      "MAJ": 0,
+      "CAP": 0,
+      "TEN": 1,
+      "OF - QOE": 0,
+      "ST/SGT": 1,
+      "CB/SD": 1,
+      "PR - QPE": 1
+    },
+    "NTS": {
+      "TCEL": 0,
+      "MAJ": 0,
+      "CAP": 0,
+      "TEN": 0,
+      "OF - QOE": 0,
+      "ST/SGT": 2,
+      "CB/SD": 2,
+      "PR - QPE": 3
+    },
+    "NST INFORMATICA": {
+      "TCEL": 0,
+      "MAJ": 0,
+      "CAP": 0,
+      "TEN": 0,
+      "OF - QOE": 0,
+      "ST/SGT": 2,
+      "CB/SD": 2,
+      "PR - QPE": 3
+    },
+    "NTS CONTRATOS": {
+      "TCEL": 0,
+      "MAJ": 1,
+      "CAP": 1,
+      "TEN": 1,
+      "OF - QOE": 1,
+      "ST/SGT": 2,
+      "CB/SD": 2,
+      "PR - QPE": 3
+    },
+    "NTS TELECOM": {
+      "TCEL": 0,
+      "MAJ": 0,
+      "CAP": 0,
+      "TEN": 0,
+      "OF - QOE": 0,
+      "ST/SGT": 2,
+      "CB/SD": 1,
+      "PR - QPE": 2
+    }
+  },
+  "exportDate": "2025-12-19T00:00:00.000Z",
+  "version": "2.0"
+}

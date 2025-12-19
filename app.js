@@ -62,6 +62,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Carregar dados
     await loadData();
     
+    // Carregar configurações (deve ser antes de inicializar filtros)
+    loadConfigurations();
+    
+    // Carregar DDQOD
+    loadDDQOD();
+    
     // Inicializar data
     updateDate();
     
@@ -77,8 +83,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicializar organograma
     initOrganograma();
     
-    // Inicializar botões de gerenciamento de dados
-    setupDataButtons();
+    // Renderizar página de configurações
+    renderConfigurations();
+    
+    // Event listener para formulário de configuração (apenas uma vez)
+    const configForm = document.getElementById('configForm');
+    if (configForm && !configForm.dataset.listenerAdded) {
+        configForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveConfig();
+        });
+        configForm.dataset.listenerAdded = 'true';
+    }
 });
 
 // ============================================
@@ -311,8 +327,17 @@ function renderUnidadeChart() {
     
     // Contar por unidade (precisa contar com duplicatas para mostrar alocações)
     const unidadeCount = {};
+    
+    // Inicializar todos os locais das configurações com 0
+    getLocaisNomes().forEach(local => {
+        unidadeCount[local] = 0;
+    });
+    
+    // Contar militares por local
     flatData.forEach(p => {
-        unidadeCount[p.LOCAL] = (unidadeCount[p.LOCAL] || 0) + 1;
+        if (p.LOCAL && unidadeCount.hasOwnProperty(p.LOCAL)) {
+            unidadeCount[p.LOCAL]++;
+        }
     });
     
     // Ordenar por quantidade
@@ -373,17 +398,27 @@ function renderFuncaoStats() {
     const uniquePessoas = getUniquePessoas(flatData);
     
     const funcaoCount = {};
+    
+    // Inicializar todas as funções das configurações com 0
+    getFuncoesNomes().forEach(funcao => {
+        funcaoCount[funcao] = 0;
+    });
+    
+    // Contar pessoas por função
     uniquePessoas.forEach(p => {
-        funcaoCount[p.FUNÇÃO] = (funcaoCount[p.FUNÇÃO] || 0) + 1;
+        if (p.FUNÇÃO && funcaoCount.hasOwnProperty(p.FUNÇÃO)) {
+            funcaoCount[p.FUNÇÃO]++;
+        }
     });
     
     const total = uniquePessoas.length;
     const container = document.getElementById('funcaoStats');
     
+    // Ordenar por quantidade (decrescente) e mostrar todas
     const sorted = Object.entries(funcaoCount).sort((a, b) => b[1] - a[1]);
     
     container.innerHTML = sorted.map(([funcao, count]) => {
-        const percentage = ((count / total) * 100).toFixed(1);
+        const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
         return `
             <div class="stat-item">
                 <div class="stat-info">
@@ -445,13 +480,16 @@ function renderPostoStats() {
 function renderUnitCards() {
     const container = document.getElementById('unitCards');
     
-    container.innerHTML = Object.keys(data).map(local => {
-        const unidadeData = data[local];
+    // Usar todos os locais das configurações
+    container.innerHTML = getLocaisNomes().map(local => {
+        const unidadeData = data[local] || {};
         
         // Coletar todas as pessoas desta unidade
         const allPessoasUnidade = [];
         Object.values(unidadeData).forEach(pessoas => {
-            allPessoasUnidade.push(...pessoas);
+            if (Array.isArray(pessoas)) {
+                allPessoasUnidade.push(...pessoas);
+            }
         });
         
         // Contar únicos nesta unidade
@@ -459,15 +497,23 @@ function renderUnitCards() {
         
         // Contar por classe (usando pessoas únicas)
         const uniquePessoasUnidade = getUniquePessoas(allPessoasUnidade);
-        const classeStats = Object.keys(unidadeData).map(classe => {
-            const count = uniquePessoasUnidade.filter(p => p.CLASSE === classe).length;
-            return `
-                <div class="unit-stat">
-                    <span class="unit-stat-label">${classe}</span>
-                    <span class="unit-stat-value">${count}</span>
-                </div>
-            `;
-        }).join('');
+        
+        // Se não há dados, mostrar todas as classes configuradas com 0
+        let classeStats;
+        if (Object.keys(unidadeData).length > 0) {
+            classeStats = Object.keys(unidadeData).map(classe => {
+                const count = uniquePessoasUnidade.filter(p => p.CLASSE === classe).length;
+                return `
+                    <div class="unit-stat">
+                        <span class="unit-stat-label">${classe}</span>
+                        <span class="unit-stat-value">${count}</span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            // Mostrar mensagem quando não há militares
+            classeStats = `<div class="unit-stat" style="color: var(--text-muted); font-style: italic; text-align: center; padding: 1rem;">Nenhum militar cadastrado</div>`;
+        }
         
         return `
             <div class="unit-card">
@@ -496,63 +542,140 @@ function initTable() {
 }
 
 function populateFilters() {
-    // Popular filtro de Local
-    const locais = [...new Set(flatData.map(p => p.LOCAL))].sort();
-    const localFilter = document.getElementById('filterLocal');
-    locais.forEach(local => {
-        const option = document.createElement('option');
-        option.value = local;
-        option.textContent = local;
-        localFilter.appendChild(option);
-    });
+    // Popular filtro de Local usando configurações
+    createMultiselect('Local', getLocaisNomes());
     
-    // Popular filtro de Classe
-    const classes = [...new Set(flatData.map(p => p.CLASSE))].sort();
-    const classeFilter = document.getElementById('filterClasse');
-    classes.forEach(classe => {
-        const option = document.createElement('option');
-        option.value = classe;
-        option.textContent = classe;
-        classeFilter.appendChild(option);
-    });
+    // Popular filtro de Classe usando configurações
+    createMultiselect('Classe', configurations.classes);
     
-    // Popular filtro de Função
-    const funcoes = [...new Set(flatData.map(p => p.FUNÇÃO))].sort();
-    const funcaoFilter = document.getElementById('filterFuncao');
-    funcoes.forEach(funcao => {
-        const option = document.createElement('option');
-        option.value = funcao;
-        option.textContent = funcao;
-        funcaoFilter.appendChild(option);
+    // Popular filtro de Função usando configurações
+    createMultiselect('Funcao', getFuncoesNomes());
+}
+
+function createMultiselect(name, options) {
+    const container = document.getElementById(`options${name}`);
+    container.innerHTML = '';
+    
+    options.forEach(option => {
+        const div = document.createElement('div');
+        div.className = 'multiselect-option';
+        div.innerHTML = `
+            <input type="checkbox" id="${name}_${option}" value="${option}">
+            <label for="${name}_${option}">${option}</label>
+        `;
+        container.appendChild(div);
+        
+        // Adicionar evento de mudança
+        const checkbox = div.querySelector('input');
+        checkbox.addEventListener('change', () => {
+            updateMultiselectLabel(name);
+            applyFilters();
+        });
     });
+}
+
+function updateMultiselectLabel(name) {
+    const checkboxes = document.querySelectorAll(`#options${name} input[type="checkbox"]:checked`);
+    const trigger = document.getElementById(`trigger${name}`);
+    const label = trigger.querySelector('.multiselect-label');
+    
+    if (checkboxes.length === 0) {
+        label.textContent = 'Selecione...';
+    } else if (checkboxes.length === 1) {
+        label.textContent = checkboxes[0].value;
+    } else {
+        label.textContent = `${checkboxes.length} selecionados`;
+    }
 }
 
 function setupFilterListeners() {
     const searchInput = document.getElementById('searchInput');
-    const filterLocal = document.getElementById('filterLocal');
-    const filterClasse = document.getElementById('filterClasse');
-    const filterFuncao = document.getElementById('filterFuncao');
     const clearBtn = document.getElementById('clearFilters');
     
     searchInput.addEventListener('input', applyFilters);
-    filterLocal.addEventListener('change', applyFilters);
-    filterClasse.addEventListener('change', applyFilters);
-    filterFuncao.addEventListener('change', applyFilters);
     
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
-        filterLocal.value = '';
-        filterClasse.value = '';
-        filterFuncao.value = '';
+        // Desmarcar todos os checkboxes
+        document.querySelectorAll('.multiselect-option input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+        updateMultiselectLabel('Local');
+        updateMultiselectLabel('Classe');
+        updateMultiselectLabel('Funcao');
         applyFilters();
+    });
+    
+    // Setup multiselect triggers
+    setupMultiselectTrigger('Local');
+    setupMultiselectTrigger('Classe');
+    setupMultiselectTrigger('Funcao');
+    
+    // Fechar dropdowns ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.multiselect-wrapper')) {
+            document.querySelectorAll('.multiselect-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+            document.querySelectorAll('.multiselect-trigger').forEach(trigger => {
+                trigger.classList.remove('active');
+            });
+        }
+    });
+}
+
+function setupMultiselectTrigger(name) {
+    const trigger = document.getElementById(`trigger${name}`);
+    const dropdown = document.getElementById(`dropdown${name}`);
+    const searchInput = dropdown.querySelector('.search-input');
+    
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Fechar outros dropdowns
+        document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+            if (d !== dropdown) d.classList.remove('show');
+        });
+        document.querySelectorAll('.multiselect-trigger').forEach(t => {
+            if (t !== trigger) t.classList.remove('active');
+        });
+        
+        // Toggle este dropdown
+        dropdown.classList.toggle('show');
+        trigger.classList.toggle('active');
+        
+        if (dropdown.classList.contains('show')) {
+            searchInput.focus();
+        }
+    });
+    
+    // Busca dentro do dropdown
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const options = dropdown.querySelectorAll('.multiselect-option');
+        
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(term) ? 'flex' : 'none';
+        });
+    });
+    
+    // Prevenir que cliques dentro do dropdown o fechem
+    dropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
     });
 }
 
 function applyFilters() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const localFilter = document.getElementById('filterLocal').value;
-    const classeFilter = document.getElementById('filterClasse').value;
-    const funcaoFilter = document.getElementById('filterFuncao').value;
+    
+    // Obter valores selecionados dos checkboxes
+    const selectedLocais = Array.from(document.querySelectorAll('#optionsLocal input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+    const selectedClasses = Array.from(document.querySelectorAll('#optionsClasse input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+    const selectedFuncoes = Array.from(document.querySelectorAll('#optionsFuncao input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
     
     filteredData = flatData.filter(pessoa => {
         const matchSearch = !searchTerm || 
@@ -560,9 +683,9 @@ function applyFilters() {
             pessoa.NUMERO.toLowerCase().includes(searchTerm) ||
             pessoa['POST/GRAD'].toLowerCase().includes(searchTerm);
         
-        const matchLocal = !localFilter || pessoa.LOCAL === localFilter;
-        const matchClasse = !classeFilter || pessoa.CLASSE === classeFilter;
-        const matchFuncao = !funcaoFilter || pessoa.FUNÇÃO === funcaoFilter;
+        const matchLocal = selectedLocais.length === 0 || selectedLocais.includes(pessoa.LOCAL);
+        const matchClasse = selectedClasses.length === 0 || selectedClasses.includes(pessoa.CLASSE);
+        const matchFuncao = selectedFuncoes.length === 0 || selectedFuncoes.includes(pessoa.FUNÇÃO);
         
         return matchSearch && matchLocal && matchClasse && matchFuncao;
     });
@@ -777,6 +900,9 @@ function openModal(index = null) {
     const form = document.getElementById('militarForm');
     const title = document.getElementById('modalTitle');
     
+    // Atualizar dropdowns com configurações atuais
+    updateFormDropdowns();
+    
     if (index !== null) {
         // Editar
         title.innerHTML = '<i class="fas fa-user-edit"></i> Editar Militar';
@@ -924,24 +1050,67 @@ async function deleteMilitar(index) {
 function initOrganograma() {
     const wrapper = document.getElementById('orgWrapper');
     
-    const hierarchy = {
-        name: 'SDTS',
-        children: [
-            { name: 'SDTS1' },
-            { name: 'SDTS2' },
-            { name: 'SDTS3' },
-            {
-                name: 'NTS',
-                children: [
-                    { name: 'NST INFORMATICA' },
-                    { name: 'NTS TELECOM' },
-                    { name: 'NTS CONTRATOS' }
-                ]
-            }
-        ]
-    };
+    // Construir hierarquia dinamicamente baseada nas configurações
+    const locaisConfig = configurations.locais;
     
-    wrapper.innerHTML = renderOrgNode(hierarchy);
+    // Debug: verificar estrutura dos locais
+    console.log('Locais configurados:', locaisConfig);
+    
+    // Função recursiva para construir a hierarquia
+    function buildHierarchy(nomePai) {
+        const filhos = locaisConfig
+            .filter(l => {
+                const localObj = typeof l === 'string' ? { nome: l, pai: null } : l;
+                return localObj.pai === nomePai;
+            })
+            .map(l => {
+                const localObj = typeof l === 'string' ? { nome: l, pai: null } : l;
+                return {
+                    name: localObj.nome,
+                    children: buildHierarchy(localObj.nome)
+                };
+            });
+        return filhos.length > 0 ? filhos : undefined;
+    }
+    
+    // Encontrar TODOS os nós raiz (locais sem pai)
+    const raizes = locaisConfig.filter(l => {
+        const localObj = typeof l === 'string' ? { nome: l, pai: null } : l;
+        return !localObj.pai;
+    });
+    
+    console.log('Raízes encontradas:', raizes);
+    
+    if (raizes.length === 0) {
+        wrapper.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-muted);">Configure um local raiz (sem pai) nas configurações</p>';
+        return;
+    }
+    
+    // Se houver apenas uma raiz, usar estrutura simples
+    if (raizes.length === 1) {
+        const raizNome = typeof raizes[0] === 'string' ? raizes[0] : raizes[0].nome;
+        const hierarchy = {
+            name: raizNome,
+            children: buildHierarchy(raizNome)
+        };
+        console.log('Hierarquia construída (raiz única):', hierarchy);
+        wrapper.innerHTML = renderOrgNode(hierarchy);
+    } else {
+        // Se houver múltiplas raízes, criar um container virtual
+        const hierarchy = {
+            name: 'ORGANIZAÇÃO',
+            isVirtual: true,
+            children: raizes.map(r => {
+                const raizNome = typeof r === 'string' ? r : r.nome;
+                return {
+                    name: raizNome,
+                    children: buildHierarchy(raizNome)
+                };
+            })
+        };
+        console.log('Hierarquia construída (múltiplas raízes):', hierarchy);
+        wrapper.innerHTML = renderOrgNode(hierarchy);
+    }
     
     // Adicionar eventos de clique
     setupOrgClickEvents();
@@ -955,27 +1124,32 @@ function renderOrgNode(node, level = 0) {
     const count = nodeData ? Object.values(nodeData).reduce((sum, arr) => sum + arr.length, 0) : 0;
     
     let html = '<div class="org-node">';
-    html += `
-        <div class="org-box" data-local="${node.name}">
-            <div class="org-box-title">${node.name}</div>
-            <div class="org-box-count">
-                <i class="fas fa-users"></i>
-                ${count} ${count === 1 ? 'pessoa' : 'pessoas'}
-            </div>
-        </div>
-    `;
     
-    // Detalhes expandíveis
-    if (nodeData) {
-        html += `<div class="org-details" data-details="${node.name}">`;
-        html += renderOrgDetails(node.name);
-        html += '</div>';
+    // Se for um nó virtual (para múltiplas raízes), não renderizar a caixa
+    if (!node.isVirtual) {
+        html += `
+            <div class="org-box" data-local="${node.name}">
+                <div class="org-box-title">${node.name}</div>
+                <div class="org-box-count">
+                    <i class="fas fa-users"></i>
+                    ${count} ${count === 1 ? 'pessoa' : 'pessoas'}
+                </div>
+            </div>
+        `;
+        
+        // Detalhes expandíveis
+        if (nodeData) {
+            html += `<div class="org-details" data-details="${node.name}">`;
+            html += renderOrgDetails(node.name);
+            html += '</div>';
+        }
     }
     
     // Renderizar filhos
     if (node.children && node.children.length > 0) {
-        const childrenClass = level === 0 ? 'org-children' : 'org-sub-children';
-        html += `<div class="${childrenClass}">`;
+        // Usar classe genérica para qualquer nível
+        const childrenClass = 'org-children-level';
+        html += `<div class="${childrenClass}" data-level="${level}">`;
         node.children.forEach(child => {
             html += '<div class="org-child">';
             html += renderOrgNode(child, level + 1);
@@ -1000,10 +1174,16 @@ function renderOrgDetails(local) {
         <div class="org-details-content">
     `;
     
-    // Ordem: CHEFE -> ADJ -> AUX
-    const ordemFuncao = ['CHEFE', 'CMTE', 'ADJ', 'AUX'];
+    // Usar todas as funções das configurações ordenadas
+    const funcoesOrdenadas = [...configurations.funcoes].sort((a, b) => {
+        const ordemA = typeof a === 'string' ? 999 : a.ordem;
+        const ordemB = typeof b === 'string' ? 999 : b.ordem;
+        return ordemA - ordemB;
+    });
     
-    ordemFuncao.forEach(funcao => {
+    funcoesOrdenadas.forEach(funcaoObj => {
+        const funcao = typeof funcaoObj === 'string' ? funcaoObj : funcaoObj.nome;
+        const cor = typeof funcaoObj === 'string' ? gerarCorAleatoria(funcaoObj) : funcaoObj.cor;
         // Buscar pessoas com essa função
         const pessoas = [];
         Object.keys(localData).forEach(classe => {
@@ -1015,10 +1195,15 @@ function renderOrgDetails(local) {
         });
         
         if (pessoas.length > 0) {
-            const funcaoClass = funcao === 'CHEFE' || funcao === 'CMTE' ? 'chefe' : funcao.toLowerCase();
+            // Determinar a classe CSS
+            let funcaoClass = funcao.toLowerCase();
+            if (funcao === 'CHEFE' || funcao === 'CMTE') {
+                funcaoClass = 'chefe';
+            }
+            
             html += `
                 <div class="org-section">
-                    <div class="org-section-header ${funcaoClass}">
+                    <div class="org-section-header ${funcaoClass}" style="background: ${cor} !important;">
                         <span>${funcao}</span>
                         <span class="org-section-count">${pessoas.length}</span>
                     </div>
@@ -1045,6 +1230,17 @@ function renderOrgDetails(local) {
     
     html += '</div>';
     return html;
+}
+
+// Função auxiliar para gerar hash de string (para cores consistentes)
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
 }
 
 function setupOrgClickEvents() {
@@ -1099,80 +1295,43 @@ function setupOrgButtons() {
 // GERENCIAMENTO DE DADOS (EXPORTAR/RESETAR)
 // ============================================
 
-function setupDataButtons() {
-    // Exportar dados
-    document.getElementById('exportDataBtn').addEventListener('click', () => {
-        try {
-            const dataStr = JSON.stringify(data, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `base_organizacao_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            URL.revokeObjectURL(url);
-            showToast('Dados exportados com sucesso!', 'success', 'Exportação');
-        } catch (error) {
-            console.error('Erro ao exportar:', error);
-            showToast('Erro ao exportar dados', 'error');
-        }
-    });
-    
-    // Resetar dados
-    document.getElementById('resetDataBtn').addEventListener('click', async () => {
-        if (!confirm('Tem certeza que deseja resetar os dados? Todas as alterações serão perdidas e os dados originais serão restaurados.')) {
-            return;
-        }
-        
-        try {
-            // Limpar localStorage
-            localStorage.removeItem('efetivo_data');
-            
-            // Recarregar do arquivo original
-            const response = await fetch('base_organizacao.json');
-            data = await response.json();
-            
-            // Salvar no localStorage
-            localStorage.setItem('efetivo_data', JSON.stringify(data));
-            
-            // Recarregar página para atualizar tudo
-            location.reload();
-            
-            showToast('Dados resetados com sucesso!', 'success', 'Reset');
-        } catch (error) {
-            console.error('Erro ao resetar:', error);
-            showToast('Erro ao resetar dados', 'error');
-        }
-    });
-}
-
 // ============================================
 // ANÁLISE DDQOD
 // ============================================
 
 // Dados previstos no DDQOD
-const ddqodPrevisto = {
-    'SDTS': {
-        'TCEL': 1,
-        'MAJ': 3,
-        'CAP': 1,
-        'TEN': 1,
-        'OF - QOE': 0,
-        'ST/SGT': 4,
-        'CB/SD': 3,
-        'PR - QPE': 4
-    },
-    'NTS': {
-        'TCEL': 0,
-        'MAJ': 1,
-        'CAP': 1,
-        'TEN': 1,
-        'OF - QOE': 1,
-        'ST/SGT': 8,
-        'CB/SD': 7,
-        'PR - QPE': 11
-    }
+// DDQOD Previsto - agora carregado do localStorage
+let ddqodPrevisto = {};
+let ddqodInfo = {
+    descricao: 'Comparativo entre o efetivo previsto no DDQOD e o efetivo atual',
+    ultimaAtualizacao: 'RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025'
 };
+
+// Grupos DDQOD - organiza locais em grupos
+let ddqodGrupos = [
+    {
+        id: 'sdts',
+        nome: 'SDTS',
+        locais: ['SDTS', 'SDTS1', 'SDTS2', 'SDTS3']
+    },
+    {
+        id: 'nts',
+        nome: 'NTS',
+        locais: ['NTS', 'NST INFORMATICA', 'NTS CONTRATOS', 'NTS TELECOM']
+    }
+];
+
+// Categorias DDQOD padrão
+const categoriasDDQOD = [
+    'TCEL',
+    'MAJ',
+    'CAP',
+    'TEN',
+    'OF - QOE',
+    'ST/SGT',
+    'CB/SD',
+    'PR - QPE'
+];
 
 function mapPostoToCategory(posto, classe) {
     // Se tem classe QPE, conta como PR - QPE
@@ -1206,35 +1365,30 @@ function mapPostoToCategory(posto, classe) {
 function calcularExistente() {
     const existente = {};
     
-    // Filtrar apenas SDTS e NTS/NST (pode ter variações como SDTS1, SDTS2, NTS INFORMATICA, NST INFORMATICA, etc)
-    const pessoasRelevantes = getUniquePessoas(flatData).filter(p => {
-        const local = p.LOCAL.toUpperCase();
-        return local === 'SDTS' || local === 'NTS' || 
-               local.startsWith('SDTS') || local.startsWith('NTS') || local.startsWith('NST');
-    });
-    
-    pessoasRelevantes.forEach(pessoa => {
-        // Determinar a seção base (SDTS ou NTS)
-        const localUpper = pessoa.LOCAL.toUpperCase();
-        const secaoBase = (localUpper.startsWith('NTS') || localUpper.startsWith('NST')) ? 'NTS' : 'SDTS';
+    // Para cada grupo, contar militares dos locais pertencentes a ele
+    ddqodGrupos.forEach(grupo => {
+        existente[grupo.nome] = {
+            'TCEL': 0,
+            'MAJ': 0,
+            'CAP': 0,
+            'TEN': 0,
+            'OF - QOE': 0,
+            'ST/SGT': 0,
+            'CB/SD': 0,
+            'PR - QPE': 0
+        };
         
-        if (!existente[secaoBase]) {
-            existente[secaoBase] = {
-                'TCEL': 0,
-                'MAJ': 0,
-                'CAP': 0,
-                'TEN': 0,
-                'OF - QOE': 0,
-                'ST/SGT': 0,
-                'CB/SD': 0,
-                'PR - QPE': 0
-            };
-        }
+        // Filtrar pessoas que estão nos locais deste grupo
+        const pessoasDoGrupo = getUniquePessoas(flatData).filter(p => {
+            return grupo.locais.includes(p.LOCAL);
+        });
         
-        const categoria = mapPostoToCategory(pessoa['POST/GRAD'], pessoa.CLASSE);
-        if (existente[secaoBase][categoria] !== undefined) {
-            existente[secaoBase][categoria]++;
-        }
+        pessoasDoGrupo.forEach(pessoa => {
+            const categoria = mapPostoToCategory(pessoa['POST/GRAD'], pessoa.CLASSE);
+            if (existente[grupo.nome][categoria] !== undefined) {
+                existente[grupo.nome][categoria]++;
+            }
+        });
     });
     
     return existente;
@@ -1243,16 +1397,34 @@ function calcularExistente() {
 function renderAnalise() {
     const existente = calcularExistente();
     
+    // Calcular previsto por grupo (somando os locais)
+    const previstoGrupos = {};
+    ddqodGrupos.forEach(grupo => {
+        previstoGrupos[grupo.nome] = {};
+        categoriasDDQOD.forEach(cat => {
+            previstoGrupos[grupo.nome][cat] = 0;
+        });
+        
+        // Somar os valores de cada local do grupo
+        grupo.locais.forEach(local => {
+            if (ddqodPrevisto[local]) {
+                Object.keys(ddqodPrevisto[local]).forEach(cat => {
+                    previstoGrupos[grupo.nome][cat] = (previstoGrupos[grupo.nome][cat] || 0) + (ddqodPrevisto[local][cat] || 0);
+                });
+            }
+        });
+    });
+    
     // Calcular totais
     let totalPrevisto = 0;
     let totalExistente = 0;
     let totalDeficit = 0;
     let totalExcedente = 0;
     
-    Object.keys(ddqodPrevisto).forEach(secao => {
-        Object.keys(ddqodPrevisto[secao]).forEach(cat => {
-            const prev = ddqodPrevisto[secao][cat];
-            const exist = (existente[secao] && existente[secao][cat]) || 0;
+    Object.keys(previstoGrupos).forEach(grupo => {
+        Object.keys(previstoGrupos[grupo]).forEach(cat => {
+            const prev = previstoGrupos[grupo][cat];
+            const exist = (existente[grupo] && existente[grupo][cat]) || 0;
             
             totalPrevisto += prev;
             totalExistente += exist;
@@ -1272,24 +1444,24 @@ function renderAnalise() {
     document.getElementById('totalDeficit').textContent = totalDeficit;
     document.getElementById('totalExcedente').textContent = totalExcedente;
     
-    // Renderizar análise por seção
+    // Renderizar análise por grupo
     const container = document.getElementById('analiseSections');
     container.innerHTML = '';
     
-    Object.keys(ddqodPrevisto).forEach(secao => {
-        const previstoSecao = ddqodPrevisto[secao];
-        const existenteSecao = existente[secao] || {};
+    ddqodGrupos.forEach(grupo => {
+        const previstoGrupo = previstoGrupos[grupo.nome];
+        const existenteGrupo = existente[grupo.nome] || {};
         
-        let deficitSecao = 0;
-        let excedenteSecao = 0;
+        let deficitGrupo = 0;
+        let excedenteGrupo = 0;
         
-        const itemsHTML = Object.keys(previstoSecao).map(categoria => {
-            const prev = previstoSecao[categoria];
-            const exist = existenteSecao[categoria] || 0;
+        const itemsHTML = Object.keys(previstoGrupo).map(categoria => {
+            const prev = previstoGrupo[categoria];
+            const exist = existenteGrupo[categoria] || 0;
             const diff = exist - prev;
             
-            if (diff < 0) deficitSecao += Math.abs(diff);
-            if (diff > 0) excedenteSecao += diff;
+            if (diff < 0) deficitGrupo += Math.abs(diff);
+            if (diff > 0) excedenteGrupo += diff;
             
             let status = 'ok';
             let statusText = 'OK';
@@ -1333,29 +1505,32 @@ function renderAnalise() {
             `;
         }).join('');
         
-        let secaoStatus = 'ok';
-        let secaoStatusText = 'Completo';
-        if (deficitSecao > 0) {
-            secaoStatus = 'deficit';
-            secaoStatusText = `Déficit de ${deficitSecao}`;
-        } else if (excedenteSecao > 0) {
-            secaoStatus = 'excedente';
-            secaoStatusText = `Excedente de ${excedenteSecao}`;
+        let grupoStatus = 'ok';
+        let grupoStatusText = 'Completo';
+        if (deficitGrupo > 0) {
+            grupoStatus = 'deficit';
+            grupoStatusText = `Déficit de ${deficitGrupo}`;
+        } else if (excedenteGrupo > 0) {
+            grupoStatus = 'excedente';
+            grupoStatusText = `Excedente de ${excedenteGrupo}`;
         }
         
         container.innerHTML += `
             <div class="analise-section">
                 <div class="analise-section-header">
                     <h2 class="analise-section-title">
-                        <i class="fas fa-building"></i>
-                        ${secao}
+                        <i class="fas fa-layer-group"></i>
+                        ${grupo.nome}
                     </h2>
                     <div class="analise-section-status">
-                        <div class="status-badge ${secaoStatus}">
-                            <i class="fas fa-${secaoStatus === 'ok' ? 'check-circle' : secaoStatus === 'deficit' ? 'exclamation-circle' : 'info-circle'}"></i>
-                            ${secaoStatusText}
+                        <div class="status-badge ${grupoStatus}">
+                            <i class="fas fa-${grupoStatus === 'ok' ? 'check-circle' : grupoStatus === 'deficit' ? 'exclamation-circle' : 'info-circle'}"></i>
+                            ${grupoStatusText}
                         </div>
                     </div>
+                </div>
+                <div class="analise-section-subtitle" style="padding: 0.5rem 1.5rem; color: var(--text-secondary); font-size: 0.85rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+                    <i class="fas fa-map-marker-alt"></i> Locais: ${grupo.locais.join(', ')}
                 </div>
                 <div class="analise-grid">
                     ${itemsHTML}
@@ -1366,9 +1541,1206 @@ function renderAnalise() {
 }
 
 // ============================================
+// GERENCIAMENTO DDQOD
+// ============================================
+
+// Carregar DDQOD do localStorage
+function loadDDQOD() {
+    const savedDDQOD = localStorage.getItem('ddqodPrevisto');
+    const savedInfo = localStorage.getItem('ddqodInfo');
+    const savedGrupos = localStorage.getItem('ddqodGrupos');
+    
+    if (savedGrupos) {
+        ddqodGrupos = JSON.parse(savedGrupos);
+    }
+    
+    if (savedDDQOD) {
+        ddqodPrevisto = JSON.parse(savedDDQOD);
+    } else {
+        // Valores padrão iniciais
+        ddqodPrevisto = {
+            'SDTS': {
+                'TCEL': 1,
+                'MAJ': 3,
+                'CAP': 1,
+                'TEN': 1,
+                'OF - QOE': 0,
+                'ST/SGT': 4,
+                'CB/SD': 3,
+                'PR - QPE': 4
+            },
+            'NTS': {
+                'TCEL': 0,
+                'MAJ': 1,
+                'CAP': 1,
+                'TEN': 1,
+                'OF - QOE': 1,
+                'ST/SGT': 8,
+                'CB/SD': 7,
+                'PR - QPE': 11
+            }
+        };
+        saveDDQODToStorage();
+    }
+    
+    if (savedInfo) {
+        ddqodInfo = JSON.parse(savedInfo);
+    }
+    
+    // Atualizar textos na página
+    updateDDQODTexts();
+}
+
+// Salvar DDQOD no localStorage
+function saveDDQODToStorage() {
+    localStorage.setItem('ddqodPrevisto', JSON.stringify(ddqodPrevisto));
+    localStorage.setItem('ddqodInfo', JSON.stringify(ddqodInfo));
+    localStorage.setItem('ddqodGrupos', JSON.stringify(ddqodGrupos));
+}
+
+// Atualizar textos na página
+function updateDDQODTexts() {
+    const descricaoEl = document.getElementById('ddqodDescricao');
+    const atualizacaoEl = document.getElementById('ddqodUltimaAtualizacao');
+    
+    if (descricaoEl) {
+        descricaoEl.textContent = ddqodInfo.descricao;
+    }
+    
+    if (atualizacaoEl) {
+        atualizacaoEl.innerHTML = `<i class="fas fa-calendar-alt"></i> Última atualização: ${ddqodInfo.ultimaAtualizacao}`;
+    }
+}
+
+// Abrir modal de edição do DDQOD
+function openDDQODModal() {
+    const modal = document.getElementById('ddqodModal');
+    const descricaoInput = document.getElementById('ddqodDescricaoInput');
+    const atualizacaoInput = document.getElementById('ddqodUltimaAtualizacaoInput');
+    const gruposContainer = document.getElementById('ddqodGruposContainer');
+    const container = document.getElementById('ddqodLocaisContainer');
+    
+    // Preencher informações gerais
+    descricaoInput.value = ddqodInfo.descricao;
+    atualizacaoInput.value = ddqodInfo.ultimaAtualizacao;
+    
+    // Renderizar lista de grupos
+    renderDDQODGrupos();
+    
+    // Renderizar formulário por grupo, mas com cada local separado
+    container.innerHTML = ddqodGrupos.map(grupo => {
+        // Calcular total do grupo
+        let totalGrupo = 0;
+        grupo.locais.forEach(local => {
+            Object.keys(ddqodPrevisto[local] || {}).forEach(cat => {
+                totalGrupo += ddqodPrevisto[local][cat] || 0;
+            });
+        });
+        
+        return `
+            <div class="ddqod-grupo-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-layer-group"></i> Grupo: ${grupo.nome}
+                    </h4>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary); background: white; padding: 4px 12px; border-radius: 12px;">
+                        ${grupo.locais.length} ${grupo.locais.length === 1 ? 'local' : 'locais'} • Total: ${totalGrupo}
+                    </span>
+                </div>
+                
+                ${grupo.locais.map((local, localIndex) => {
+                    const dados = ddqodPrevisto[local] || {};
+                    let totalLocal = 0;
+                    Object.values(dados).forEach(v => totalLocal += v || 0);
+                    
+                    return `
+                        <div class="ddqod-local-section" style="margin-bottom: ${localIndex < grupo.locais.length - 1 ? '1.5rem' : '0'}; padding: 1.25rem; background: white; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h5 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; font-size: 1rem;">
+                                    <i class="fas fa-map-marker-alt"></i> ${local}
+                                </h5>
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-secondary); padding: 2px 10px; border-radius: 10px;">
+                                    Total: ${totalLocal}
+                                </span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+                                ${categoriasDDQOD.map(cat => `
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ddqod_${local}_${cat}" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">${cat}:</label>
+                                        <input type="number" 
+                                               id="ddqod_${local}_${cat}" 
+                                               class="form-control" 
+                                               min="0" 
+                                               value="${dados[cat] || 0}"
+                                               style="text-align: center; font-size: 0.9rem; padding: 8px;">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }).join('');
+    
+    modal.style.display = 'block';
+}
+
+// Fechar modal de edição do DDQOD
+function closeDDQODModal() {
+    const modal = document.getElementById('ddqodModal');
+    modal.style.display = 'none';
+}
+
+// Salvar DDQOD
+function saveDDQOD() {
+    const descricaoInput = document.getElementById('ddqodDescricaoInput');
+    const atualizacaoInput = document.getElementById('ddqodUltimaAtualizacaoInput');
+    
+    // Salvar informações gerais
+    ddqodInfo.descricao = descricaoInput.value.trim();
+    ddqodInfo.ultimaAtualizacao = atualizacaoInput.value.trim();
+    
+    // Salvar dados por local (não por grupo)
+    const novoDDQOD = {};
+    
+    ddqodGrupos.forEach(grupo => {
+        grupo.locais.forEach(local => {
+            novoDDQOD[local] = {};
+            categoriasDDQOD.forEach(cat => {
+                const inputId = `ddqod_${local}_${cat}`;
+                const input = document.getElementById(inputId);
+                if (input) {
+                    novoDDQOD[local][cat] = parseInt(input.value) || 0;
+                }
+            });
+        });
+    });
+    
+    ddqodPrevisto = novoDDQOD;
+    
+    // Salvar no localStorage
+    saveDDQODToStorage();
+    
+    // Atualizar textos na página
+    updateDDQODTexts();
+    
+    // Atualizar análise
+    renderAnalise();
+    
+    // Fechar modal
+    closeDDQODModal();
+    
+    showToast('DDQOD atualizado com sucesso!', 'success', 'Sucesso');
+}
+
+// ============================================
+// GESTÃO DE GRUPOS DDQOD
+// ============================================
+
+// Renderizar lista de grupos
+function renderDDQODGrupos() {
+    const container = document.getElementById('ddqodGruposContainer');
+    
+    if (ddqodGrupos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 1rem;">Nenhum grupo criado. Clique em "Novo Grupo" para começar.</p>';
+        return;
+    }
+    
+    container.innerHTML = ddqodGrupos.map((grupo, index) => `
+        <div class="config-item" style="margin-bottom: 0.75rem;">
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <i class="fas fa-layer-group" style="color: var(--primary);"></i>
+                    <span class="config-item-name" style="font-weight: 600;">${grupo.nome}</span>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary); background: var(--bg-secondary); padding: 2px 8px; border-radius: 10px;">
+                        ${grupo.locais.length} ${grupo.locais.length === 1 ? 'local' : 'locais'}
+                    </span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 2rem;">
+                    <i class="fas fa-map-marker-alt"></i> ${grupo.locais.join(', ') || 'Nenhum local'}
+                </div>
+            </div>
+            <div class="config-item-actions">
+                <button class="btn-config-action edit" onclick="editGrupo(${index})" title="Editar Grupo">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-config-action delete" onclick="deleteGrupo(${index})" title="Excluir Grupo">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Abrir modal de grupo (criar/editar)
+let currentGrupoIndex = null;
+
+function openGrupoModal(index = null) {
+    currentGrupoIndex = index;
+    const isEdit = index !== null;
+    
+    const grupo = isEdit ? ddqodGrupos[index] : { nome: '', locais: [] };
+    
+    const locaisDisponiveis = getLocaisNomes();
+    
+    const html = `
+        <div id="grupoModal" class="modal" style="display: block;">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-layer-group"></i> ${isEdit ? 'Editar' : 'Novo'} Grupo</h2>
+                    <button class="btn-close" onclick="closeGrupoModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="grupoNome">Nome do Grupo:</label>
+                        <input type="text" id="grupoNome" class="form-control" value="${grupo.nome}" placeholder="Ex: SDTS, NTS, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label>Locais do Grupo:</label>
+                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem;">
+                            ${locaisDisponiveis.map(local => `
+                                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; cursor: pointer; border-radius: var(--radius-sm); transition: background 0.2s;" 
+                                       onmouseover="this.style.background='var(--bg-secondary)'" 
+                                       onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" 
+                                           value="${local}" 
+                                           ${grupo.locais.includes(local) ? 'checked' : ''}
+                                           style="cursor: pointer;">
+                                    <span>${local}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeGrupoModal()">Cancelar</button>
+                    <button class="btn-primary" onclick="saveGrupo()"><i class="fas fa-save"></i> Salvar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('grupoModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeGrupoModal() {
+    const modal = document.getElementById('grupoModal');
+    if (modal) {
+        modal.remove();
+    }
+    currentGrupoIndex = null;
+}
+
+function saveGrupo() {
+    const nomeInput = document.getElementById('grupoNome');
+    const checkboxes = document.querySelectorAll('#grupoModal input[type="checkbox"]:checked');
+    
+    const nome = nomeInput.value.trim();
+    const locais = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (!nome) {
+        showToast('Por favor, informe o nome do grupo', 'error', 'Erro');
+        return;
+    }
+    
+    // Verificar se já existe um grupo com esse nome (exceto o próprio em edição)
+    const nomeExiste = ddqodGrupos.some((g, idx) => 
+        g.nome.toUpperCase() === nome.toUpperCase() && idx !== currentGrupoIndex
+    );
+    
+    if (nomeExiste) {
+        showToast('Já existe um grupo com este nome', 'error', 'Erro');
+        return;
+    }
+    
+    const grupoData = {
+        id: nome.toLowerCase().replace(/\s+/g, '_'),
+        nome: nome,
+        locais: locais
+    };
+    
+    if (currentGrupoIndex !== null) {
+        // Editar
+        const nomeAntigo = ddqodGrupos[currentGrupoIndex].nome;
+        ddqodGrupos[currentGrupoIndex] = grupoData;
+        
+        // Atualizar ddqodPrevisto se o nome mudou
+        if (nomeAntigo !== nome && ddqodPrevisto[nomeAntigo]) {
+            ddqodPrevisto[nome] = ddqodPrevisto[nomeAntigo];
+            delete ddqodPrevisto[nomeAntigo];
+        }
+        
+        showToast('Grupo atualizado com sucesso!', 'success', 'Sucesso');
+    } else {
+        // Criar
+        ddqodGrupos.push(grupoData);
+        
+        // Inicializar ddqodPrevisto para o novo grupo
+        ddqodPrevisto[nome] = {};
+        categoriasDDQOD.forEach(cat => {
+            ddqodPrevisto[nome][cat] = 0;
+        });
+        
+        showToast('Grupo criado com sucesso!', 'success', 'Sucesso');
+    }
+    
+    saveDDQODToStorage();
+    renderDDQODGrupos();
+    closeGrupoModal();
+    
+    // Atualizar o modal de DDQOD se estiver aberto
+    const ddqodModal = document.getElementById('ddqodModal');
+    if (ddqodModal && ddqodModal.style.display === 'block') {
+        openDDQODModal();
+    }
+}
+
+function editGrupo(index) {
+    openGrupoModal(index);
+}
+
+function deleteGrupo(index) {
+    const grupo = ddqodGrupos[index];
+    
+    if (!confirm(`Tem certeza que deseja excluir o grupo "${grupo.nome}"?\n\nIsso também excluirá os dados de previsto deste grupo.`)) {
+        return;
+    }
+    
+    // Remover grupo
+    ddqodGrupos.splice(index, 1);
+    
+    // Remover dados de previsto
+    delete ddqodPrevisto[grupo.nome];
+    
+    saveDDQODToStorage();
+    renderDDQODGrupos();
+    showToast('Grupo excluído com sucesso!', 'success', 'Sucesso');
+    
+    // Atualizar o formulário de previsto
+    openDDQODModal();
+}
+
+// Exportar DDQOD para JSON
+function exportDDQOD() {
+    const dataToExport = {
+        info: ddqodInfo,
+        grupos: ddqodGrupos,
+        previsto: ddqodPrevisto,
+        exportDate: new Date().toISOString(),
+        version: '2.0'
+    };
+    
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ddqod_previsto_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('DDQOD exportado com sucesso!', 'success', 'Sucesso');
+}
+
+// Importar DDQOD de JSON
+function importDDQOD(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // Validar estrutura básica
+            if (!data.previsto || typeof data.previsto !== 'object') {
+                throw new Error('Arquivo JSON inválido: estrutura "previsto" não encontrada');
+            }
+            
+            // Importar dados
+            if (data.info) {
+                ddqodInfo = data.info;
+            }
+            if (data.grupos) {
+                ddqodGrupos = data.grupos;
+            }
+            ddqodPrevisto = data.previsto;
+            
+            // Salvar no localStorage
+            saveDDQODToStorage();
+            
+            // Atualizar interface
+            updateDDQODTexts();
+            renderAnalise();
+            
+            showToast(`DDQOD importado com sucesso!${data.exportDate ? ' (Exportado em: ' + new Date(data.exportDate).toLocaleDateString() + ')' : ''}`, 'success', 'Sucesso');
+        } catch (error) {
+            console.error('Erro ao importar DDQOD:', error);
+            showToast('Erro ao importar arquivo JSON: ' + error.message, 'error', 'Erro');
+        }
+    };
+    reader.readAsText(file);
+    
+    // Limpar input para permitir reimportar o mesmo arquivo
+    event.target.value = '';
+}
+
+// ============================================
+// GERENCIAMENTO DE CONFIGURAÇÕES
+// ============================================
+
+// Configurações padrão
+let configurations = {
+    locais: [], // Array de objetos: [{nome: 'SDTS', pai: null}, {nome: 'SDTS1', pai: 'SDTS'}, ...]
+    funcoes: [], // Array de objetos: [{nome: 'CHEFE', ordem: 1, cor: '#38a169'}, ...]
+    classes: [],
+    postos: []
+};
+
+// Carregar configurações do localStorage
+function loadConfigurations() {
+    const saved = localStorage.getItem('efetivo_configs');
+    if (saved) {
+        configurations = JSON.parse(saved);
+        
+        // Migrar formato antigo de locais (array de strings) para novo (array de objetos)
+        if (configurations.locais.length > 0 && typeof configurations.locais[0] === 'string') {
+            configurations.locais = configurations.locais.map(nome => {
+                // Definir hierarquia padrão baseada no nome
+                let pai = null;
+                if (nome.startsWith('SDTS') && nome !== 'SDTS') {
+                    pai = 'SDTS';
+                } else if ((nome.startsWith('NTS') || nome.startsWith('NST')) && nome !== 'NTS') {
+                    pai = 'NTS';
+                }
+                return { nome: nome, pai: pai };
+            });
+            saveConfigurations();
+        }
+        
+        // Migrar formato antigo de funções (array de strings) para novo (array de objetos)
+        if (configurations.funcoes.length > 0 && typeof configurations.funcoes[0] === 'string') {
+            configurations.funcoes = configurations.funcoes.map((nome, index) => ({
+                nome: nome,
+                ordem: index + 1,
+                cor: getCoresPadrao()[nome] || gerarCorAleatoria(nome)
+            }));
+            saveConfigurations();
+        }
+    } else {
+        // Extrair valores únicos dos dados existentes
+        extractDefaultConfigurations();
+        saveConfigurations();
+    }
+}
+
+// Função auxiliar para gerar hash de string (para cores consistentes)
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
+}
+
+// Cores padrão para funções conhecidas (tons mais suaves)
+function getCoresPadrao() {
+    return {
+        'CHEFE': '#48bb78',   // Verde suave
+        'CMTE': '#48bb78',    // Verde suave
+        'ADJ': '#4299e1',     // Azul suave
+        'AUX': '#a0aec0'      // Cinza suave
+    };
+}
+
+// Gerar cor aleatória suave baseada no nome
+function gerarCorAleatoria(nome) {
+    const hue = Math.abs(hashCode(nome)) % 360;
+    // Saturação 60% e luminosidade 65% para cores suaves
+    return `hsl(${hue}, 60%, 65%)`;
+}
+
+// Extrair configurações dos dados existentes
+function extractDefaultConfigurations() {
+    const locaisSet = new Set();
+    const funcoesSet = new Set();
+    const classesSet = new Set();
+    const postosSet = new Set();
+    
+    flatData.forEach(pessoa => {
+        if (pessoa.LOCAL) locaisSet.add(pessoa.LOCAL);
+        if (pessoa.FUNÇÃO) funcoesSet.add(pessoa.FUNÇÃO);
+        if (pessoa.CLASSE) classesSet.add(pessoa.CLASSE);
+        if (pessoa['POST/GRAD']) postosSet.add(pessoa['POST/GRAD']);
+    });
+    
+    // Criar locais com hierarquia padrão
+    const locaisArray = Array.from(locaisSet).sort();
+    configurations.locais = locaisArray.map(nome => {
+        let pai = null;
+        // Definir hierarquia padrão baseada no nome
+        if (nome.startsWith('SDTS') && nome !== 'SDTS') {
+            pai = 'SDTS';
+        } else if ((nome.startsWith('NTS') || nome.startsWith('NST')) && nome !== 'NTS') {
+            pai = 'NTS';
+        }
+        return { nome: nome, pai: pai };
+    });
+    
+    // Criar funções com ordem e cor
+    const funcoesArray = Array.from(funcoesSet).sort();
+    const coresPadrao = getCoresPadrao();
+    const ordemPrioritaria = ['CHEFE', 'CMTE', 'ADJ', 'AUX'];
+    
+    configurations.funcoes = funcoesArray.map((nome, index) => {
+        const ordemPrioridade = ordemPrioritaria.indexOf(nome);
+        return {
+            nome: nome,
+            ordem: ordemPrioridade >= 0 ? ordemPrioridade + 1 : ordemPrioritaria.length + index + 1,
+            cor: coresPadrao[nome] || gerarCorAleatoria(nome)
+        };
+    });
+    
+    // Ordenar funções pela ordem
+    configurations.funcoes.sort((a, b) => a.ordem - b.ordem);
+    
+    configurations.classes = Array.from(classesSet).sort();
+    configurations.postos = Array.from(postosSet).sort();
+}
+
+// Salvar configurações no localStorage
+function saveConfigurations() {
+    localStorage.setItem('efetivo_configs', JSON.stringify(configurations));
+}
+
+// Obter apenas os nomes dos locais (compatibilidade com código existente)
+function getLocaisNomes() {
+    return configurations.locais.map(l => typeof l === 'string' ? l : l.nome);
+}
+
+// Obter local completo (com pai) por nome
+function getLocalConfig(nome) {
+    const local = configurations.locais.find(l => 
+        (typeof l === 'string' ? l : l.nome) === nome
+    );
+    if (typeof local === 'string') {
+        return { nome: local, pai: null };
+    }
+    return local || { nome: nome, pai: null };
+}
+
+// Obter apenas os nomes das funções (compatibilidade com código existente)
+function getFuncoesNomes() {
+    return configurations.funcoes.map(f => typeof f === 'string' ? f : f.nome);
+}
+
+// Obter função completa (com ordem e cor) por nome
+function getFuncaoConfig(nome) {
+    const funcao = configurations.funcoes.find(f => 
+        (typeof f === 'string' ? f : f.nome) === nome
+    );
+    if (typeof funcao === 'string') {
+        return { nome: funcao, ordem: 999, cor: gerarCorAleatoria(funcao) };
+    }
+    return funcao || { nome: nome, ordem: 999, cor: gerarCorAleatoria(nome) };
+}
+
+// Renderizar todas as configurações
+function renderConfigurations() {
+    renderConfigList('locais', 'Local');
+    renderConfigList('funcoes', 'Função');
+    renderConfigList('classes', 'Classe');
+    renderConfigList('postos', 'Posto/Graduação');
+}
+
+// Renderizar lista de configuração
+function renderConfigList(type, label) {
+    const listElement = document.getElementById(`${type}List`);
+    if (!listElement) return;
+    
+    const items = configurations[type];
+    
+    if (items.length === 0) {
+        listElement.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 1rem;">Nenhum ${label.toLowerCase()} cadastrado</p>`;
+        return;
+    }
+    
+    // Mapear tipo plural para singular
+    const typeMap = {
+        'locais': 'local',
+        'funcoes': 'funcao',
+        'classes': 'classe',
+        'postos': 'posto'
+    };
+    const singularType = typeMap[type];
+    
+    // Se for funções, renderizar com ordem e cor
+    if (type === 'funcoes') {
+        listElement.innerHTML = items.map((funcaoObj, index) => {
+            const nome = typeof funcaoObj === 'string' ? funcaoObj : funcaoObj.nome;
+            const ordem = typeof funcaoObj === 'string' ? index + 1 : funcaoObj.ordem;
+            const cor = typeof funcaoObj === 'string' ? gerarCorAleatoria(funcaoObj) : funcaoObj.cor;
+            
+            return `
+                <div class="config-item funcao-item" draggable="true" data-index="${index}">
+                    <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                        <span class="funcao-ordem" title="Ordem de exibição">${ordem}</span>
+                        <span class="funcao-cor" style="background: ${cor};" title="Cor no organograma"></span>
+                        <span class="config-item-name">${nome}</span>
+                    </div>
+                    <div class="config-item-actions">
+                        <button class="btn-config-action move-up" onclick="moveFuncao(${index}, 'up')" title="Mover para cima" ${index === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button class="btn-config-action move-down" onclick="moveFuncao(${index}, 'down')" title="Mover para baixo" ${index === items.length - 1 ? 'disabled' : ''}>
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button class="btn-config-action edit" onclick="editConfig('${singularType}', '${escapeHtml(nome)}')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-config-action delete" onclick="deleteConfig('${type}', '${escapeHtml(nome)}')" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else if (type === 'locais') {
+        // Renderização especial para locais (mostra hierarquia)
+        listElement.innerHTML = items.map(localObj => {
+            const nome = typeof localObj === 'string' ? localObj : localObj.nome;
+            const pai = typeof localObj === 'string' ? null : localObj.pai;
+            const hierarquiaInfo = pai ? ` <span style="color: var(--text-secondary); font-size: 0.85em;">(filho de ${pai})</span>` : ' <span style="color: var(--text-secondary); font-size: 0.85em;">(raiz)</span>';
+            
+            return `
+                <div class="config-item">
+                    <span class="config-item-name">${nome}${hierarquiaInfo}</span>
+                    <div class="config-item-actions">
+                        <button class="btn-config-action edit" onclick="editConfig('${singularType}', '${escapeHtml(nome)}')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-config-action delete" onclick="deleteConfig('${type}', '${escapeHtml(nome)}')" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        // Renderização normal para outros tipos
+        listElement.innerHTML = items.map(item => `
+            <div class="config-item">
+                <span class="config-item-name">${item}</span>
+                <div class="config-item-actions">
+                    <button class="btn-config-action edit" onclick="editConfig('${singularType}', '${escapeHtml(item)}')" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-config-action delete" onclick="deleteConfig('${type}', '${escapeHtml(item)}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// Escape HTML para prevenir XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Abrir modal de configuração
+function openConfigModal(type, value = '') {
+    const modal = document.getElementById('configModal');
+    const title = document.getElementById('configModalTitle');
+    const label = document.getElementById('configValueLabel');
+    const input = document.getElementById('configValue');
+    const typeInput = document.getElementById('configType');
+    const oldValueInput = document.getElementById('configOldValue');
+    const corGroup = document.getElementById('configCorGroup');
+    const corInput = document.getElementById('configCor');
+    const paiGroup = document.getElementById('configPaiGroup');
+    const paiSelect = document.getElementById('configPai');
+    
+    const labels = {
+        local: 'Local',
+        funcao: 'Função',
+        classe: 'Classe',
+        posto: 'Posto/Graduação'
+    };
+    
+    const labelText = labels[type];
+    title.textContent = value ? `Editar ${labelText}` : `Adicionar ${labelText}`;
+    label.textContent = `Nome do ${labelText}:`;
+    input.value = value;
+    typeInput.value = type;
+    oldValueInput.value = value;
+    
+    // Mostrar campo de cor apenas para funções
+    if (type === 'funcao') {
+        corGroup.style.display = 'block';
+        paiGroup.style.display = 'none';
+        // Se estiver editando, buscar a cor atual
+        if (value) {
+            const funcaoConfig = getFuncaoConfig(value);
+            corInput.value = funcaoConfig.cor;
+        } else {
+            corInput.value = '#4299e1';
+        }
+    } else if (type === 'local') {
+        // Mostrar campo de pai para locais
+        paiGroup.style.display = 'block';
+        corGroup.style.display = 'none';
+        
+        // Popular dropdown de pai
+        const locaisNomes = getLocaisNomes();
+        paiSelect.innerHTML = '<option value="">-- Nenhum (raiz) --</option>' +
+            locaisNomes
+                .filter(l => l !== value) // Excluir o próprio local
+                .map(l => `<option value="${l}">${l}</option>`)
+                .join('');
+        
+        // Se estiver editando, definir o pai atual
+        if (value) {
+            const localConfig = getLocalConfig(value);
+            paiSelect.value = localConfig.pai || '';
+        }
+    } else {
+        corGroup.style.display = 'none';
+        paiGroup.style.display = 'none';
+    }
+    
+    modal.style.display = 'block';
+    setTimeout(() => input.focus(), 100);
+}
+
+// Fechar modal de configuração
+function closeConfigModal() {
+    const modal = document.getElementById('configModal');
+    modal.style.display = 'none';
+    // Limpar apenas o campo de input visível, não os campos hidden
+    document.getElementById('configValue').value = '';
+}
+
+// Salvar configuração
+function saveConfig() {
+    const typeInput = document.getElementById('configType').value;
+    const oldValue = document.getElementById('configOldValue').value;
+    const newValue = document.getElementById('configValue').value.trim();
+    
+    console.log('saveConfig chamado:', { typeInput, oldValue, newValue });
+    
+    if (!newValue) {
+        showToast('Por favor, preencha o campo obrigatório', 'error', 'Erro de Validação');
+        return;
+    }
+    
+    const typeMap = {
+        local: 'locais',
+        funcao: 'funcoes',
+        classe: 'classes',
+        posto: 'postos'
+    };
+    
+    const configType = typeMap[typeInput];
+    
+    if (!configType || !configurations[configType]) {
+        console.error('Tipo de configuração inválido:', typeInput);
+        showToast('Erro ao salvar configuração', 'error');
+        return;
+    }
+    
+    // Tratamento especial para funções (com cor e ordem)
+    if (typeInput === 'funcao') {
+        const corValue = document.getElementById('configCor').value;
+        
+        // Verificar se já existe
+        const nomeExistente = configurations.funcoes.find(f => 
+            (typeof f === 'string' ? f : f.nome) === newValue
+        );
+        if (nomeExistente && newValue !== oldValue) {
+            showToast('Este valor já existe na lista', 'warning', 'Atenção');
+            return;
+        }
+        
+        if (oldValue && oldValue.length > 0) {
+            // Edição
+            const index = configurations.funcoes.findIndex(f => 
+                (typeof f === 'string' ? f : f.nome) === oldValue
+            );
+            if (index !== -1) {
+                const ordemAtual = typeof configurations.funcoes[index] === 'string' ? index + 1 : configurations.funcoes[index].ordem;
+                configurations.funcoes[index] = {
+                    nome: newValue,
+                    ordem: ordemAtual,
+                    cor: corValue
+                };
+                updateMilitaresWithConfig(typeInput, oldValue, newValue);
+            }
+            showToast('Configuração atualizada com sucesso!', 'success', 'Sucesso');
+        } else {
+            // Novo item
+            const novaOrdem = configurations.funcoes.length + 1;
+            configurations.funcoes.push({
+                nome: newValue,
+                ordem: novaOrdem,
+                cor: corValue
+            });
+            showToast('Configuração adicionada com sucesso!', 'success', 'Sucesso');
+        }
+    } else {
+        // Tratamento especial para locais (com pai)
+        if (typeInput === 'local') {
+            const paiValue = document.getElementById('configPai').value;
+            
+            // Verificar se já existe
+            const locaisNomes = getLocaisNomes();
+            if (locaisNomes.includes(newValue) && newValue !== oldValue) {
+                showToast('Este valor já existe na lista', 'warning', 'Atenção');
+                return;
+            }
+            
+            // Verificar ciclo (não pode ser pai de si mesmo, nem criar ciclo)
+            if (paiValue && paiValue === newValue) {
+                showToast('Um local não pode ser pai de si mesmo', 'error', 'Erro');
+                return;
+            }
+            
+            // Verificar se criaria ciclo (simplificado - apenas 1 nível)
+            if (paiValue && oldValue) {
+                const paiConfig = getLocalConfig(paiValue);
+                if (paiConfig && paiConfig.pai === oldValue) {
+                    showToast('Esta hierarquia criaria um ciclo', 'error', 'Erro');
+                    return;
+                }
+            }
+            
+            if (oldValue && oldValue.length > 0) {
+                // Edição
+                const index = configurations.locais.findIndex(l => 
+                    (typeof l === 'string' ? l : l.nome) === oldValue
+                );
+                if (index !== -1) {
+                    configurations.locais[index] = {
+                        nome: newValue,
+                        pai: paiValue || null
+                    };
+                    updateMilitaresWithConfig(typeInput, oldValue, newValue);
+                    
+                    // Atualizar filhos que referenciam este local
+                    configurations.locais.forEach(l => {
+                        if (typeof l === 'object' && l.pai === oldValue) {
+                            l.pai = newValue;
+                        }
+                    });
+                }
+                showToast('Configuração atualizada com sucesso!', 'success', 'Sucesso');
+            } else {
+                // Novo item
+                configurations.locais.push({
+                    nome: newValue,
+                    pai: paiValue || null
+                });
+                showToast('Configuração adicionada com sucesso!', 'success', 'Sucesso');
+            }
+        } else {
+            // Tratamento normal para outros tipos (classes, postos)
+            const configArr = configurations[configType];
+            const valoresExistentes = Array.isArray(configArr) && typeof configArr[0] === 'string' 
+                ? configArr 
+                : configArr.map(x => typeof x === 'string' ? x : x.nome);
+            
+            if (valoresExistentes.includes(newValue) && newValue !== oldValue) {
+                showToast('Este valor já existe na lista', 'warning', 'Atenção');
+                return;
+            }
+            
+            if (oldValue && oldValue.length > 0) {
+                // Edição
+                const index = valoresExistentes.indexOf(oldValue);
+                if (index !== -1) {
+                    configurations[configType][index] = newValue;
+                    updateMilitaresWithConfig(typeInput, oldValue, newValue);
+                }
+                showToast('Configuração atualizada com sucesso!', 'success', 'Sucesso');
+            } else {
+                // Novo item
+                configurations[configType].push(newValue);
+                configurations[configType].sort();
+                showToast('Configuração adicionada com sucesso!', 'success', 'Sucesso');
+            }
+        }
+    }
+    
+    saveConfigurations();
+    renderConfigurations();
+    updateFormDropdowns();
+    closeConfigModal();
+    
+    // Atualizar modal de DDQOD se estiver aberto
+    const ddqodModal = document.getElementById('ddqodModal');
+    if (ddqodModal && ddqodModal.style.display === 'block') {
+        openDDQODModal();
+    }
+    
+    // Atualizar dashboard e filtros sempre que houver alteração
+    updateAllViews();
+}
+
+// Editar configuração
+function editConfig(type, value) {
+    openConfigModal(type, value);
+}
+
+// Excluir configuração
+function deleteConfig(type, value) {
+    const typeMap = {
+        locais: 'Local',
+        funcoes: 'Função',
+        classes: 'Classe',
+        postos: 'Posto/Graduação'
+    };
+    
+    const label = typeMap[type];
+    
+    // Verificação especial para locais: não pode excluir se tem filhos
+    if (type === 'locais') {
+        const temFilhos = configurations.locais.some(l => {
+            const localObj = typeof l === 'string' ? { nome: l, pai: null } : l;
+            return localObj.pai === value;
+        });
+        
+        if (temFilhos) {
+            showToast(`Não é possível excluir. Este local possui locais filhos. Remova ou reatribua os filhos primeiro.`, 'error', 'Erro');
+            return;
+        }
+    }
+    
+    // Verificar se está em uso
+    const fieldMap = {
+        locais: 'LOCAL',
+        funcoes: 'FUNÇÃO',
+        classes: 'CLASSE',
+        postos: 'POST/GRAD'
+    };
+    
+    const field = fieldMap[type];
+    const inUse = flatData.some(p => p[field] === value);
+    
+    if (inUse) {
+        showToast(`Não é possível excluir. Este ${label.toLowerCase()} está em uso por militares cadastrados.`, 'error', 'Erro');
+        return;
+    }
+    
+    if (!confirm(`Tem certeza que deseja excluir "${value}"?`)) {
+        return;
+    }
+    
+    // Tratamento especial para funções
+    if (type === 'funcoes') {
+        const index = configurations[type].findIndex(f => 
+            (typeof f === 'string' ? f : f.nome) === value
+        );
+        if (index !== -1) {
+            configurations[type].splice(index, 1);
+            // Atualizar ordens
+            configurations[type].forEach((funcao, idx) => {
+                if (typeof funcao === 'object') {
+                    funcao.ordem = idx + 1;
+                }
+            });
+            saveConfigurations();
+            renderConfigurations();
+            updateFormDropdowns();
+            updateAllViews();
+            showToast(`${label} excluído com sucesso!`, 'success', 'Sucesso');
+        }
+    } else if (type === 'locais') {
+        // Tratamento especial para locais
+        const index = configurations[type].findIndex(l => 
+            (typeof l === 'string' ? l : l.nome) === value
+        );
+        if (index !== -1) {
+            configurations[type].splice(index, 1);
+            saveConfigurations();
+            renderConfigurations();
+            updateFormDropdowns();
+            updateAllViews();
+            showToast(`${label} excluído com sucesso!`, 'success', 'Sucesso');
+        }
+    } else {
+        const index = configurations[type].indexOf(value);
+        if (index !== -1) {
+            configurations[type].splice(index, 1);
+            saveConfigurations();
+            renderConfigurations();
+            updateFormDropdowns();
+            showToast(`${label} excluído com sucesso!`, 'success', 'Sucesso');
+        }
+    }
+}
+
+// Atualizar militares quando uma configuração é editada
+function updateMilitaresWithConfig(type, oldValue, newValue) {
+    const fieldMap = {
+        local: 'LOCAL',
+        funcao: 'FUNÇÃO',
+        classe: 'CLASSE',
+        posto: 'POST/GRAD'
+    };
+    
+    const field = fieldMap[type];
+    
+    // Atualizar em flatData
+    flatData.forEach(pessoa => {
+        if (pessoa[field] === oldValue) {
+            pessoa[field] = newValue;
+        }
+    });
+    
+    // Reconstruir data hierárquico
+    rebuildHierarchicalData();
+    
+    // Salvar alterações
+    saveDataToLocalStorage();
+    
+    // Atualizar todas as visualizações
+    updateAllViews();
+}
+
+// Reconstruir estrutura hierárquica após mudanças
+function rebuildHierarchicalData() {
+    data = {};
+    flatData.forEach(pessoa => {
+        const local = pessoa.LOCAL || 'SEM LOCAL';
+        const classe = pessoa.CLASSE || 'SEM CLASSE';
+        
+        if (!data[local]) data[local] = {};
+        if (!data[local][classe]) data[local][classe] = [];
+        
+        data[local][classe].push(pessoa);
+    });
+}
+
+// Atualizar todas as visualizações após alterações
+function updateAllViews() {
+    // Atualizar dashboard
+    initDashboard();
+    
+    // Atualizar tabela
+    applyFilters();
+    
+    // Atualizar organograma
+    initOrganograma();
+    
+    // Atualizar análise DDQOD
+    const analysisTab = document.getElementById('analise');
+    if (analysisTab && analysisTab.classList.contains('active')) {
+        renderAnalise();
+    }
+}
+
+// Atualizar dropdowns do formulário
+function updateFormDropdowns() {
+    // Atualizar dropdown de Posto/Graduação
+    const postoSelect = document.getElementById('inputPostoGrad');
+    if (postoSelect) {
+        const currentValue = postoSelect.value;
+        postoSelect.innerHTML = '<option value="">Selecione</option>' +
+            configurations.postos.map(p => `<option value="${p}">${p}</option>`).join('');
+        if (currentValue && configurations.postos.includes(currentValue)) {
+            postoSelect.value = currentValue;
+        }
+    }
+    
+    // Atualizar dropdown de Local
+    const localSelect = document.getElementById('inputLocal');
+    if (localSelect) {
+        const currentValue = localSelect.value;
+        const locaisNomes = getLocaisNomes();
+        localSelect.innerHTML = '<option value="">Selecione</option>' +
+            locaisNomes.map(l => `<option value="${l}">${l}</option>`).join('');
+        if (currentValue && locaisNomes.includes(currentValue)) {
+            localSelect.value = currentValue;
+        }
+    }
+    
+    // Atualizar dropdown de Função
+    const funcaoSelect = document.getElementById('inputFuncao');
+    if (funcaoSelect) {
+        const currentValue = funcaoSelect.value;
+        const funcoesNomes = getFuncoesNomes();
+        funcaoSelect.innerHTML = '<option value="">Selecione</option>' +
+            funcoesNomes.map(f => `<option value="${f}">${f}</option>`).join('');
+        if (currentValue && funcoesNomes.includes(currentValue)) {
+            funcaoSelect.value = currentValue;
+        }
+    }
+    
+    // Atualizar dropdown de Classe
+    const classeSelect = document.getElementById('inputClasse');
+    if (classeSelect) {
+        const currentValue = classeSelect.value;
+        classeSelect.innerHTML = '<option value="">Selecione</option>' +
+            configurations.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (currentValue && configurations.classes.includes(currentValue)) {
+            classeSelect.value = currentValue;
+        }
+    }
+    
+    // Recriar filtros multi-select da tabela
+    populateFilters();
+}
+
+// Mover função para cima ou para baixo na ordem
+function moveFuncao(index, direction) {
+    if (direction === 'up' && index > 0) {
+        // Trocar com o item anterior
+        [configurations.funcoes[index], configurations.funcoes[index - 1]] = 
+        [configurations.funcoes[index - 1], configurations.funcoes[index]];
+    } else if (direction === 'down' && index < configurations.funcoes.length - 1) {
+        // Trocar com o próximo item
+        [configurations.funcoes[index], configurations.funcoes[index + 1]] = 
+        [configurations.funcoes[index + 1], configurations.funcoes[index]];
+    }
+    
+    // Atualizar ordens
+    configurations.funcoes.forEach((funcao, idx) => {
+        if (typeof funcao === 'object') {
+            funcao.ordem = idx + 1;
+        }
+    });
+    
+    saveConfigurations();
+    renderConfigurations();
+    updateAllViews();
+    showToast('Ordem atualizada!', 'success');
+}
+
+// ============================================
 // FUNÇÕES GLOBAIS (para onclick)
 // ============================================
 window.changePage = changePage;
 window.closeOrgDetails = closeOrgDetails;
 window.editMilitar = editMilitar;
 window.deleteMilitar = deleteMilitar;
+window.openConfigModal = openConfigModal;
+window.closeConfigModal = closeConfigModal;
+window.saveConfig = saveConfig;
+window.editConfig = editConfig;
+window.deleteConfig = deleteConfig;
+window.moveFuncao = moveFuncao;

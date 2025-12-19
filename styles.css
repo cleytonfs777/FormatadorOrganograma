@@ -514,6 +514,117 @@ body {
     transition: var(--transition);
 }
 
+/* Multiselect personalizado */
+.multiselect-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.multiselect-trigger {
+    width: 100%;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.multiselect-trigger:hover {
+    border-color: var(--primary);
+}
+
+.multiselect-trigger.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+}
+
+.multiselect-label {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.multiselect-trigger i {
+    margin-left: 8px;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+}
+
+.multiselect-trigger.active i {
+    transform: rotate(180deg);
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    display: none;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.multiselect-dropdown.show {
+    display: block;
+}
+
+.multiselect-search {
+    padding: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.multiselect-search input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+}
+
+.multiselect-options {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.multiselect-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+}
+
+.multiselect-option:hover {
+    background: var(--bg-secondary);
+}
+
+.multiselect-option input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.multiselect-option label {
+    cursor: pointer;
+    flex: 1;
+    margin: 0;
+    font-weight: normal;
+}
+
 .filter-group input:focus,
 .filter-group select:focus {
     outline: none;
@@ -845,6 +956,39 @@ body {
     box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
 }
 
+/* Form Section para DDQOD */
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ddqod-local-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.ddqod-local-section h4 {
+    margin-bottom: 1rem;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
 .form-actions {
     display: flex;
     gap: 1rem;
@@ -854,8 +998,18 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
+.modal-footer {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
 .btn-cancel,
-.btn-save {
+.btn-save,
+.btn-primary {
     padding: 10px 24px;
     border: none;
     border-radius: var(--radius-md);
@@ -878,12 +1032,14 @@ body {
     color: white;
 }
 
-.btn-save {
+.btn-save,
+.btn-primary {
     background: var(--primary);
     color: white;
 }
 
-.btn-save:hover {
+.btn-save:hover,
+.btn-primary:hover {
     background: var(--primary-dark);
     transform: translateY(-2px);
 }
@@ -1207,7 +1363,56 @@ body {
     font-size: 0.65rem;
 }
 
-/* Connectors - Linha vertical do pai */
+/* Connectors - Suporte para múltiplos níveis */
+.org-children-level {
+    display: flex;
+    gap: 2rem;
+    padding-top: 3rem;
+    position: relative;
+    justify-content: center;
+}
+
+/* Linha vertical do pai para todos os níveis */
+.org-children-level::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 1.5rem;
+    background: #464546;
+}
+
+/* Linha horizontal conectando os filhos para todos os níveis */
+.org-children-level::after {
+    content: '';
+    position: absolute;
+    top: 1.5rem;
+    height: 2px;
+    background: #464546;
+}
+
+/* Ajustes para nível 0 (primeiro nível de filhos) */
+.org-children-level[data-level="0"]::after {
+    left: 6.25%;
+    right: 6.25%;
+}
+
+/* Ajustes para níveis mais profundos */
+.org-children-level[data-level="1"]::after,
+.org-children-level[data-level="2"]::after,
+.org-children-level[data-level="3"]::after {
+    left: 8.33%;
+    right: 8.33%;
+}
+
+/* Quando tem apenas 1 filho, não mostrar linha horizontal */
+.org-children-level:has(.org-child:only-child)::after {
+    display: none;
+}
+
+/* Manter compatibilidade com classes antigas */
 .org-children {
     display: flex;
     gap: 2rem;
@@ -1227,15 +1432,20 @@ body {
     background: #464546;
 }
 
-/* Linha horizontal conectando os filhos */
+/* Linha horizontal conectando os filhos - do primeiro ao último */
 .org-children::after {
     content: '';
     position: absolute;
     top: 1.5rem;
-    left: 7.7%;
-    right: 24.4%;
+    left: 6.25%;
+    right: 6.25%;
     height: 2px;
     background: #464546;
+}
+
+/* Quando tem apenas 1 filho, não mostrar linha horizontal */
+.org-children:has(.org-child:only-child)::after {
+    display: none;
 }
 
 .org-child {
@@ -1254,46 +1464,8 @@ body {
     transform: translateX(-50%);
     width: 2px;
     height: 1.5rem;
-    background: #718096;
+    background: #464546;
     z-index: 1;
-}
-
-/* Sub-children (NTS -> seus filhos) */
-.org-sub-children {
-    display: flex;
-    gap: 1.5rem;
-    padding-top: 3rem;
-    position: relative;
-    justify-content: center;
-}
-
-/* Linha vertical do pai NTS */
-.org-sub-children::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 1.5rem;
-    background: #718096;
-}
-
-/* Linha horizontal conectando os sub-filhos */
-.org-sub-children::after {
-    content: '';
-    position: absolute;
-    top: 1.5rem;
-    left: 15.9%;
-    right: 15.9%;
-    height: 2px;
-    background: #718096;
-}
-
-/* Ajuste para sub-child */
-.org-sub-children .org-child::before {
-    top: -1.5rem;
-    height: 1.5rem;
 }
 
 /* Detalhes expandidos */
@@ -1810,3 +1982,202 @@ body {
     background: var(--danger);
 }
 
+/* ===================================
+   CONFIGURAÇÕES PAGE
+   =================================== */
+
+.config-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+.config-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+}
+
+.config-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-add-config {
+    background: white;
+    color: var(--primary);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.btn-add-config:hover {
+    background: var(--bg-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.config-body {
+    padding: 1.5rem;
+}
+
+.config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.config-item:hover {
+    border-color: var(--primary);
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.config-item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.config-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-config-action {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+    font-size: 1rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-config-action.edit {
+    color: var(--primary);
+}
+
+.btn-config-action.edit:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-config-action.delete {
+    color: var(--danger);
+}
+
+.btn-config-action.delete:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.config-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.config-list::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.config-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: var(--radius-md);
+}
+
+.config-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+@media (max-width: 1024px) {
+    .config-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Estilos especiais para lista de funções */
+.funcao-item {
+    cursor: grab;
+}
+
+.funcao-item:active {
+    cursor: grabbing;
+}
+
+.funcao-ordem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.funcao-cor {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-config-action.move-up,
+.btn-config-action.move-down {
+    color: var(--text-secondary);
+}
+
+.btn-config-action.move-up:hover:not(:disabled),
+.btn-config-action.move-down:hover:not(:disabled) {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-config-action:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}

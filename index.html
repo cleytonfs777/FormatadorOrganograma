@@ -33,14 +33,12 @@
                     <i class="fas fa-chart-line"></i>
                     Análise DDQOD
                 </button>
+                <button class="nav-tab" data-tab="configuracoes">
+                    <i class="fas fa-cog"></i>
+                    Configurações
+                </button>
             </nav>
             <div class="header-actions">
-                <button class="btn-header" id="exportDataBtn" title="Exportar dados para JSON">
-                    <i class="fas fa-download"></i> Exportar Dados
-                </button>
-                <button class="btn-header" id="resetDataBtn" title="Recarregar dados do arquivo original">
-                    <i class="fas fa-sync"></i> Resetar Dados
-                </button>
                 <span class="date-display"></span>
             </div>
         </div>
@@ -153,21 +151,48 @@
                 </div>
                 <div class="filter-group">
                     <label><i class="fas fa-building"></i> Local</label>
-                    <select id="filterLocal">
-                        <option value="">Todos os Locais</option>
-                    </select>
+                    <div class="multiselect-wrapper">
+                        <button type="button" class="multiselect-trigger" id="triggerLocal">
+                            <span class="multiselect-label">Selecione...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="multiselect-dropdown" id="dropdownLocal">
+                            <div class="multiselect-search">
+                                <input type="text" placeholder="Buscar..." class="search-input">
+                            </div>
+                            <div class="multiselect-options" id="optionsLocal"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="filter-group">
                     <label><i class="fas fa-layer-group"></i> Classe</label>
-                    <select id="filterClasse">
-                        <option value="">Todas as Classes</option>
-                    </select>
+                    <div class="multiselect-wrapper">
+                        <button type="button" class="multiselect-trigger" id="triggerClasse">
+                            <span class="multiselect-label">Selecione...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="multiselect-dropdown" id="dropdownClasse">
+                            <div class="multiselect-search">
+                                <input type="text" placeholder="Buscar..." class="search-input">
+                            </div>
+                            <div class="multiselect-options" id="optionsClasse"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="filter-group">
                     <label><i class="fas fa-briefcase"></i> Função</label>
-                    <select id="filterFuncao">
-                        <option value="">Todas as Funções</option>
-                    </select>
+                    <div class="multiselect-wrapper">
+                        <button type="button" class="multiselect-trigger" id="triggerFuncao">
+                            <span class="multiselect-label">Selecione...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="multiselect-dropdown" id="dropdownFuncao">
+                            <div class="multiselect-search">
+                                <input type="text" placeholder="Buscar..." class="search-input">
+                            </div>
+                            <div class="multiselect-options" id="optionsFuncao"></div>
+                        </div>
+                    </div>
                 </div>
                 <button class="btn-clear" id="clearFilters">
                     <i class="fas fa-eraser"></i> Limpar Filtros
@@ -254,11 +279,27 @@
         <!-- Análise DDQOD Section -->
         <section class="tab-content" id="analise">
             <div class="section-header">
-                <h1><i class="fas fa-balance-scale"></i> Análise DDQOD - Previsto vs Existente</h1>
-                <p>Comparativo entre o efetivo previsto no DDQOD e o efetivo atual</p>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
-                    <i class="fas fa-calendar-alt"></i> Última atualização: RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025
-                </p>
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h1><i class="fas fa-balance-scale"></i> Análise DDQOD - Previsto vs Existente</h1>
+                        <p id="ddqodDescricao">Comparativo entre o efetivo previsto no DDQOD e o efetivo atual</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;" id="ddqodUltimaAtualizacao">
+                            <i class="fas fa-calendar-alt"></i> Última atualização: RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="openDDQODModal()" style="margin-top: 0.5rem; white-space: nowrap;">
+                            <i class="fas fa-edit"></i> Editar DDQOD
+                        </button>
+                        <button class="btn-secondary" onclick="exportDDQOD()" style="margin-top: 0.5rem; white-space: nowrap;">
+                            <i class="fas fa-download"></i> Exportar JSON
+                        </button>
+                        <button class="btn-secondary" onclick="document.getElementById('importDDQODFile').click()" style="margin-top: 0.5rem; white-space: nowrap;">
+                            <i class="fas fa-upload"></i> Importar JSON
+                        </button>
+                        <input type="file" id="importDDQODFile" accept=".json" style="display: none;" onchange="importDDQOD(event)">
+                    </div>
+                </div>
             </div>
 
             <!-- Resumo Geral -->
@@ -303,6 +344,68 @@
 
             <!-- Análise por Seção -->
             <div class="analise-sections" id="analiseSections"></div>
+        </section>
+
+        <!-- Configurações Section -->
+        <section class="tab-content" id="configuracoes">
+            <div class="section-header">
+                <h1><i class="fas fa-cog"></i> Configurações do Sistema</h1>
+                <p>Gerencie locais, funções e classes utilizados no sistema</p>
+            </div>
+
+            <div class="config-container">
+                <!-- Gerenciar Locais -->
+                <div class="config-card">
+                    <div class="config-header">
+                        <h2><i class="fas fa-building"></i> Locais</h2>
+                        <button class="btn-add-config" onclick="openConfigModal('local')">
+                            <i class="fas fa-plus"></i> Adicionar Local
+                        </button>
+                    </div>
+                    <div class="config-body">
+                        <div class="config-list" id="locaisList"></div>
+                    </div>
+                </div>
+
+                <!-- Gerenciar Funções -->
+                <div class="config-card">
+                    <div class="config-header">
+                        <h2><i class="fas fa-briefcase"></i> Funções</h2>
+                        <button class="btn-add-config" onclick="openConfigModal('funcao')">
+                            <i class="fas fa-plus"></i> Adicionar Função
+                        </button>
+                    </div>
+                    <div class="config-body">
+                        <div class="config-list" id="funcoesList"></div>
+                    </div>
+                </div>
+
+                <!-- Gerenciar Classes -->
+                <div class="config-card">
+                    <div class="config-header">
+                        <h2><i class="fas fa-layer-group"></i> Classes</h2>
+                        <button class="btn-add-config" onclick="openConfigModal('classe')">
+                            <i class="fas fa-plus"></i> Adicionar Classe
+                        </button>
+                    </div>
+                    <div class="config-body">
+                        <div class="config-list" id="classesList"></div>
+                    </div>
+                </div>
+
+                <!-- Gerenciar Postos/Graduações -->
+                <div class="config-card">
+                    <div class="config-header">
+                        <h2><i class="fas fa-medal"></i> Postos/Graduações</h2>
+                        <button class="btn-add-config" onclick="openConfigModal('posto')">
+                            <i class="fas fa-plus"></i> Adicionar Posto/Graduação
+                        </button>
+                    </div>
+                    <div class="config-body">
+                        <div class="config-list" id="postosList"></div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -399,8 +502,102 @@
         </div>
     </div>
 
+    <!-- Config Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="configModalTitle"></h2>
+                <span class="close" onclick="closeConfigModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="configForm">
+                    <input type="hidden" id="configType">
+                    <input type="hidden" id="configOldValue">
+                    
+                    <div class="form-group">
+                        <label id="configValueLabel"></label>
+                        <input type="text" id="configValue" required>
+                    </div>
+                    
+                    <div class="form-group" id="configPaiGroup" style="display: none;">
+                        <label for="configPai">
+                            <i class="fas fa-sitemap"></i> Local Pai (hierarquia no organograma)
+                        </label>
+                        <select id="configPai">
+                            <option value="">-- Nenhum (raiz) --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="configCorGroup" style="display: none;">
+                        <label for="configCor">
+                            <i class="fas fa-palette"></i> Cor (no organograma)
+                        </label>
+                        <input type="color" id="configCor" value="#4299e1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeConfigModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveConfig()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Modal DDQOD -->
+    <div id="ddqodModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Editar DDQOD Previsto</h2>
+                <button class="btn-close" onclick="closeDDQODModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Informações Gerais -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Informações Gerais</h3>
+                    <div class="form-group">
+                        <label for="ddqodDescricaoInput">Descrição:</label>
+                        <input type="text" id="ddqodDescricaoInput" class="form-control" 
+                               placeholder="Ex: Comparativo entre o efetivo previsto no DDQOD e o efetivo atual">
+                    </div>
+                    <div class="form-group">
+                        <label for="ddqodUltimaAtualizacaoInput">Última Atualização:</label>
+                        <input type="text" id="ddqodUltimaAtualizacaoInput" class="form-control" 
+                               placeholder="Ex: RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025">
+                    </div>
+                </div>
+
+                <!-- Gestão de Grupos -->
+                <div class="form-section" style="margin-top: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3><i class="fas fa-layer-group"></i> Grupos DDQOD</h3>
+                        <button type="button" class="btn-primary" onclick="openGrupoModal()" style="padding: 8px 16px; font-size: 0.9rem;">
+                            <i class="fas fa-plus"></i> Novo Grupo
+                        </button>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Organize os locais em grupos para facilitar a análise. Ex: Grupo SDTS contém SDTS, SDTS1, SDTS2, etc.
+                    </p>
+                    <div id="ddqodGruposContainer"></div>
+                </div>
+
+                <!-- Efetivo Previsto por Grupo -->
+                <div class="form-section" style="margin-top: 2rem;">
+                    <h3><i class="fas fa-users"></i> Efetivo Previsto por Grupo e Posto/Graduação</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Configure a quantidade prevista de militares para cada posto/graduação em cada grupo.
+                    </p>
+                    <div id="ddqodLocaisContainer"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDDQODModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveDDQOD()"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="footer">
