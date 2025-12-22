@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerar Modelo DDQOD</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c5282;
+            margin-top: 0;
+        }
+        button {
+            background: #3182ce;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #2c5282;
+        }
+        .info {
+            background: #bee3f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #3182ce;
+        }
+        .exemplo {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📊 Gerar Modelo DDQOD (XLSX)</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Instruções:</strong>
+            <p>Clique no botão abaixo para baixar o modelo em formato XLSX com três abas:</p>
+            <ul>
+                <li><strong>Info:</strong> Informações gerais (descrição e data de atualização)</li>
+                <li><strong>Grupos:</strong> Organização dos locais em grupos</li>
+                <li><strong>Previsto:</strong> Quantidade prevista por LOCAL e CATEGORIA</li>
+            </ul>
+        </div>
+
+        <div class="exemplo">
+            <strong>Exemplo de preenchimento da aba "Previsto":</strong><br><br>
+            LOCAL | CATEGORIA | QUANTIDADE<br>
+            SDTS | TCEL | 1<br>
+            SDTS | MAJ | 2<br>
+            SDTS | CAP | 3<br>
+            SDTS1 | CB/SD | 5<br>
+            NTS | OF - QOE | 2<br>
+        </div>
+
+        <button onclick="gerarModelo()">⬇️ Baixar Modelo XLSX</button>
+
+        <p style="margin-top: 30px; color: #718096; font-size: 14px;">
+            Após preencher o modelo, importe-o através do botão "Importar XLSX" na aba "Análise DDQOD" do sistema.
+        </p>
+    </div>
+
+    <script>
+        function gerarModelo() {
+            // Criar workbook
+            const wb = XLSX.utils.book_new();
+
+            // Aba 1: Info
+            const infoData = [
+                ['CAMPO', 'VALOR'],
+                ['Descrição', 'Comparativo entre o efetivo previsto no DDQOD e o efetivo atual'],
+                ['Última Atualização', 'RESOLUÇÃO N.º 1.280, DE 18 DE SETEMBRO DE 2025']
+            ];
+            const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+            wsInfo['!cols'] = [{wch: 20}, {wch: 60}];
+            XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
+
+            // Aba 2: Grupos
+            const gruposData = [
+                ['NOME', 'LOCAIS'],
+                ['SDTS', 'SDTS;SDTS1;SDTS2;SDTS3'],
+                ['NTS', 'NTS;NST INFORMATICA;NTS CONTRATOS;NTS TELECOM']
+            ];
+            const wsGrupos = XLSX.utils.aoa_to_sheet(gruposData);
+            wsGrupos['!cols'] = [{wch: 15}, {wch: 50}];
+            XLSX.utils.book_append_sheet(wb, wsGrupos, 'Grupos');
+
+            // Aba 3: Previsto (com exemplos)
+            const previstoData = [
+                ['LOCAL', 'CATEGORIA', 'QUANTIDADE'],
+                ['SDTS', 'TCEL', 1],
+                ['SDTS', 'MAJ', 2],
+                ['SDTS', 'CAP', 3],
+                ['SDTS', 'TEN', 2],
+                ['SDTS', 'OF - QOE', 1],
+                ['SDTS', 'ST/SGT', 4],
+                ['SDTS', 'CB/SD', 10],
+                ['SDTS', 'PR - QPE', 2],
+                ['SDTS1', 'CB/SD', 5],
+                ['SDTS2', 'CB/SD', 5],
+                ['SDTS3', 'CB/SD', 5],
+                ['NTS', 'MAJ', 1],
+                ['NTS', 'CAP', 2],
+                ['NTS', 'CB/SD', 8],
+                ['NST INFORMATICA', 'CB/SD', 3],
+                ['NTS CONTRATOS', 'CB/SD', 2],
+                ['NTS TELECOM', 'CB/SD', 3]
+            ];
+            const wsPrevisto = XLSX.utils.aoa_to_sheet(previstoData);
+            wsPrevisto['!cols'] = [{wch: 20}, {wch: 15}, {wch: 12}];
+            XLSX.utils.book_append_sheet(wb, wsPrevisto, 'Previsto');
+
+            // Gerar e baixar
+            XLSX.writeFile(wb, 'modelo_ddqod.xlsx');
+            
+            alert('✅ Modelo XLSX gerado com sucesso!\n\nAbra o arquivo, preencha as quantidades e importe no sistema.');
+        }
+    </script>
+</body>
+</html>

@@ -1995,6 +1995,99 @@ function importDDQOD(event) {
     event.target.value = '';
 }
 
+// Importar DDQOD de XLSX (planilha modelo)
+function importDDQODXLSX(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            // Tentar ler informações gerais (opcional)
+            if (workbook.Sheets['Info']) {
+                const infoRows = XLSX.utils.sheet_to_json(workbook.Sheets['Info'], { header: 1, defval: '' });
+                infoRows.forEach(r => {
+                    if (!r || r.length === 0) return;
+                    const key = String(r[0]).toLowerCase();
+                    if (key.includes('descri')) ddqodInfo.descricao = r[1] || ddqodInfo.descricao;
+                    if (key.includes('ultima') || key.includes('atual')) ddqodInfo.ultimaAtualizacao = r[1] || ddqodInfo.ultimaAtualizacao;
+                });
+            }
+
+            // Tentar ler grupos (opcional)
+            if (workbook.Sheets['Grupos']) {
+                const groupsRows = XLSX.utils.sheet_to_json(workbook.Sheets['Grupos'], { defval: '' });
+                const newGroups = [];
+                groupsRows.forEach(row => {
+                    const nome = row['NOME'] || row['Grupo'] || row['GRUPO'] || row['nome'];
+                    const locaisField = row['LOCAIS'] || row['Locais'] || row['LOCAIS/LOCALS'] || row['LOCALS'] || row['LOCAL'] || row['local'] || '';
+                    if (nome) {
+                        const locais = String(locaisField).split(/[;,]/).map(s => s.trim()).filter(Boolean);
+                        newGroups.push({ id: String(nome).toLowerCase().replace(/\s+/g, '_'), nome: String(nome), locais: locais });
+                    }
+                });
+                if (newGroups.length > 0) ddqodGrupos = newGroups;
+            }
+
+            // Ler dados previstos - tentar aba 'Previsto' ou primeira aba disponível
+            let previstoSheet = workbook.Sheets['Previsto'];
+            if (!previstoSheet) {
+                // Tentar primeira aba se "Previsto" não existir
+                const firstSheetName = workbook.SheetNames[0];
+                if (firstSheetName) {
+                    previstoSheet = workbook.Sheets[firstSheetName];
+                    console.log(`Aba "Previsto" não encontrada. Usando primeira aba: "${firstSheetName}"`);
+                } else {
+                    throw new Error('Nenhuma aba encontrada no arquivo XLSX. Use o modelo fornecido (gerar_modelo_ddqod.html).');
+                }
+            }
+
+            const previstoRows = XLSX.utils.sheet_to_json(previstoSheet, { defval: '' });
+            const novoPrevisto = {};
+            let registrosImportados = 0;
+
+            previstoRows.forEach(r => {
+                // Tentar múltiplos nomes de colunas
+                const local = r['LOCAL'] || r['Local'] || r['local'] || r['UNIDADE'] || r['Unidade'] || r['unidade'] || r['Grupo'] || r['GRUPO'];
+                const categoria = r['CATEGORIA'] || r['Categoria'] || r['categoria'] || r['POSTO'] || r['Posto'] || r['posto'] || r['POSTO/GRAD'] || r['Posto/Grad'] || r['POSTO/GRADUAÇÃO'];
+                const quantidadeRaw = r['QUANTIDADE'] || r['Quantidade'] || r['quantidade'] || r['QTD'] || r['Qtd'] || r['qtd'] || r['VALOR'] || r['Quantidade Prevista'];
+                const quantidade = Number(quantidadeRaw) || 0;
+
+                if (!local || !categoria || quantidade === 0) return;
+
+                if (!novoPrevisto[local]) novoPrevisto[local] = {};
+                novoPrevisto[local][categoria] = (novoPrevisto[local][categoria] || 0) + quantidade;
+                registrosImportados++;
+            });
+
+            if (registrosImportados === 0) {
+                throw new Error('Nenhum dado válido encontrado. Verifique se as colunas estão nomeadas como: LOCAL, CATEGORIA, QUANTIDADE');
+            }
+
+            ddqodPrevisto = novoPrevisto;
+
+            // Salvar no localStorage
+            saveDDQODToStorage();
+            
+            // Atualizar interface
+            updateDDQODTexts();
+            renderAnalise();
+
+            showToast(`DDQOD importado com sucesso! ${registrosImportados} registros carregados.`, 'success', 'Sucesso');
+        } catch (error) {
+            console.error('Erro ao importar DDQOD (XLSX):', error);
+            showToast('Erro ao importar arquivo XLSX: ' + error.message, 'error', 'Erro');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+
+    // Limpar input para permitir reimportar o mesmo arquivo
+    event.target.value = '';
+}
+
 // ============================================
 // GERENCIAMENTO DE CONFIGURAÇÕES
 // ============================================

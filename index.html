@@ -291,13 +291,10 @@
                         <button class="btn-primary" onclick="openDDQODModal()" style="margin-top: 0.5rem; white-space: nowrap;">
                             <i class="fas fa-edit"></i> Editar DDQOD
                         </button>
-                        <button class="btn-secondary" onclick="exportDDQOD()" style="margin-top: 0.5rem; white-space: nowrap;">
-                            <i class="fas fa-download"></i> Exportar JSON
+                        <button class="btn-primary" onclick="document.getElementById('importDDQODFile').click()" style="margin-top: 0.5rem; white-space: nowrap;">
+                            <i class="fas fa-upload"></i> Importar XLSX
                         </button>
-                        <button class="btn-secondary" onclick="document.getElementById('importDDQODFile').click()" style="margin-top: 0.5rem; white-space: nowrap;">
-                            <i class="fas fa-upload"></i> Importar JSON
-                        </button>
-                        <input type="file" id="importDDQODFile" accept=".json" style="display: none;" onchange="importDDQOD(event)">
+                        <input type="file" id="importDDQODFile" accept=".xlsx,.xls" style="display: none;" onchange="importDDQODXLSX(event)">
                     </div>
                 </div>
             </div>
@@ -607,6 +604,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

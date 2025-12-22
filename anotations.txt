@@ -1,6 +1,0 @@
-"idChamada"
-"idRecurso"
-"idNaturezaREDS"
-"idOrgao"
-"idRecursoPrincipal"
-"idUnidadeServicoResponsavel"
