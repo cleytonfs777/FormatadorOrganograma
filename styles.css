@@ -120,6 +120,40 @@ body {
     gap: 16px;
 }
 
+.btn-ambiente {
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg, #9333ea, #6b21a8);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+}
+
+.btn-ambiente:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);
+}
+
+.btn-ambiente i {
+    font-size: 1rem;
+}
+
+.ambiente-option:hover {
+    border-color: var(--primary) !important;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.badge-ambiente-atual {
+    display: inline-block;
+}
+
 .btn-header {
     padding: 0.5rem 1rem;
     background: var(--primary);

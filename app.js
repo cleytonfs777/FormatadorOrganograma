@@ -2837,3 +2837,62 @@ window.saveConfig = saveConfig;
 window.editConfig = editConfig;
 window.deleteConfig = deleteConfig;
 window.moveFuncao = moveFuncao;
+
+// ============================================
+// GERENCIAMENTO DE AMBIENTES
+// ============================================
+
+let ambienteAtual = 'PRODUCAO'; // PRODUCAO ou LABORATORIO
+
+function abrirModalAmbiente() {
+    const modal = document.getElementById('modalAmbiente');
+    modal.classList.add('active');
+}
+
+function fecharModalAmbiente() {
+    const modal = document.getElementById('modalAmbiente');
+    modal.classList.remove('active');
+}
+
+function selecionarAmbiente(ambiente) {
+    if (ambiente === ambienteAtual) {
+        fecharModalAmbiente();
+        showToast(`Você já está no ambiente de ${ambiente === 'PRODUCAO' ? 'PRODUÇÃO' : 'LABORATÓRIO'}`, 'info');
+        return;
+    }
+
+    if (ambiente === 'LABORATORIO') {
+        showToast('Ambiente de Laboratório ainda não implementado', 'warning', 'Em Desenvolvimento');
+        return;
+    }
+
+    ambienteAtual = ambiente;
+    atualizarInterfaceAmbiente();
+    fecharModalAmbiente();
+    showToast(`Ambiente alterado para ${ambiente === 'PRODUCAO' ? 'PRODUÇÃO' : 'LABORATÓRIO'}`, 'success');
+}
+
+function atualizarInterfaceAmbiente() {
+    // Atualizar texto do botão
+    const btnTexto = document.getElementById('ambienteAtual');
+    if (btnTexto) {
+        btnTexto.textContent = ambienteAtual === 'PRODUCAO' ? 'PRODUÇÃO' : 'LABORATÓRIO';
+    }
+
+    // Atualizar badges no modal
+    const badgeProducao = document.getElementById('badgeProducao');
+    const badgeLaboratorio = document.getElementById('badgeLaboratorio');
+    
+    if (ambienteAtual === 'PRODUCAO') {
+        badgeProducao.style.display = 'inline';
+        badgeLaboratorio.style.display = 'none';
+    } else {
+        badgeProducao.style.display = 'none';
+        badgeLaboratorio.style.display = 'inline';
+    }
+}
+
+// Expor funções globalmente
+window.abrirModalAmbiente = abrirModalAmbiente;
+window.fecharModalAmbiente = fecharModalAmbiente;
+window.selecionarAmbiente = selecionarAmbiente;

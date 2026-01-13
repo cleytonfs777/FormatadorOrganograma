@@ -39,6 +39,10 @@
                 </button>
             </nav>
             <div class="header-actions">
+                <button class="btn-ambiente" id="btnAmbiente" onclick="abrirModalAmbiente()" title="Alternar ambiente de trabalho">
+                    <i class="fas fa-flask"></i>
+                    <span id="ambienteAtual">PRODUÇÃO</span>
+                </button>
                 <span class="date-display"></span>
             </div>
         </div>
@@ -595,6 +599,71 @@
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeDDQODModal()">Cancelar</button>
                 <button class="btn-primary" onclick="saveDDQOD()"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Seleção de Ambiente -->
+    <div class="modal" id="modalAmbiente">
+        <div class="modal-overlay" onclick="fecharModalAmbiente()"></div>
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-exchange-alt"></i> Alternar Ambiente de Trabalho</h2>
+                <button class="modal-close" onclick="fecharModalAmbiente()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
+                    Escolha o ambiente onde deseja trabalhar:
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Opção PRODUÇÃO -->
+                    <div class="ambiente-option" onclick="selecionarAmbiente('PRODUCAO')" style="cursor: pointer; padding: 1.5rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #1e3a8a); border-radius: var(--radius-md); color: white; font-size: 1.75rem;">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #1a202c;">
+                                    <strong>PRODUÇÃO</strong>
+                                    <span id="badgeProducao" class="badge-ambiente-atual" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; background: var(--primary); color: white; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600;">ATUAL</span>
+                                </h3>
+                                <p style="margin: 0; font-size: 0.9rem; color: #4a5568; line-height: 1.4;">
+                                    Dados oficiais e reais. Alterações afetam o sistema permanentemente.
+                                </p>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color: #718096;"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Opção LABORATÓRIO -->
+                    <div class="ambiente-option" onclick="selecionarAmbiente('LABORATORIO')" style="cursor: pointer; padding: 1.5rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #9333ea, #6b21a8); border-radius: var(--radius-md); color: white; font-size: 1.75rem;">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #1a202c;">
+                                    <strong>LABORATÓRIO</strong>
+                                    <span id="badgeLaboratorio" class="badge-ambiente-atual" style="display: none; margin-left: 0.5rem; padding: 0.25rem 0.5rem; background: #9333ea; color: white; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600;">ATUAL</span>
+                                </h3>
+                                <p style="margin: 0; font-size: 0.9rem; color: #4a5568; line-height: 1.4;">
+                                    Ambiente de testes e simulações. Experimente sem afetar a produção.
+                                </p>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color: #718096;"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--primary); border-radius: var(--radius-sm);">
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                        <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+                        <strong>Dica:</strong> Use o LABORATÓRIO para testar movimentações e cenários antes de aplicar na PRODUÇÃO.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
